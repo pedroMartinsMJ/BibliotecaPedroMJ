@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta username="viewport" content="width=device-width, initial-scale=1" />
+    <title>Livraria - Página Inicial</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Montserrat', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            width: 100%;
+            background-color: #4a90e2;
+            padding: 1.5rem 2rem;
+            color: white;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(74, 144, 226, 0.4);
+        }
+
+        header h1 {
+            margin: 0;
+            font-weight: 700;
+            font-size: 2.5rem;
+            letter-spacing: 2px;
+        }
+
+        main {
+            max-width: 1200px;
+            width: 90%;
+            margin: 3rem auto 4rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+        }
+
+        .category-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+            padding: 2rem 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .category-card:hover,
+        .category-card:focus {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 25px rgba(74, 144, 226, 0.4);
+            outline: none;
+        }
+
+        .category-icon {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            color: #4a90e2;
+        }
+
+        .category-username {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #222;
+            letter-spacing: 1px;
+            user-select: none;
+        }
+
+        footer {
+            width: 100%;
+            background-color: #4a90e2;
+            color: white;
+            text-align: center;
+            padding: 1rem 0;
+            font-size: 0.9rem;
+            box-shadow: 0 -4px 6px rgba(74, 144, 226, 0.4);
+            margin-top: auto;
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            main {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+        }
+
+        @media (max-width: 480px) {
+            main {
+                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+<header>
+    <h1>Bem-vindo à Livraria</h1>
+</header>
+<main>
+    <div class="category-card" tabindex="0" role="button" aria-label="Categoria Ficção">
+        <span class="material-icons category-icon" aria-hidden="true">menu_book</span>
+        <div class="category-username">FICÇÃO</div>
+    </div>
+    <div class="category-card" tabindex="0" role="button" aria-label="Categoria Fantasia">
+        <span class="material-icons category-icon" aria-hidden="true">auto_stories</span>
+        <div class="category-username">FANTASIA</div>
+    </div>
+    <div class="category-card" tabindex="0" role="button" aria-label="Categoria Mistério">
+        <span class="material-icons category-icon" aria-hidden="true">help_outline</span>
+        <div class="category-username">MISTÉRIO</div>
+    </div>
+    <div class="category-card" tabindex="0" role="button" aria-label="Categoria Romance">
+        <span class="material-icons category-icon" aria-hidden="true">favorite_border</span>
+        <div class="category-username">ROMANCE</div>
+    </div>
+    <div class="category-card" tabindex="0" role="button" aria-label="Categoria Biografia">
+        <span class="material-icons category-icon" aria-hidden="true">person_outline</span>
+        <div class="category-username">BIOGRAFIA</div>
+    </div>
+    <div class="category-card" tabindex="0" role="button" aria-label="Categoria Suspense">
+        <span class="material-icons category-icon" aria-hidden="true">visibility_off</span>
+        <div class="category-username">SUSPENSE</div>
+    </div>
+    <div class="category-card" tabindex="0" role="button" aria-label="Categoria Thriller">
+        <span class="material-icons category-icon" aria-hidden="true">flash_on</span>
+        <div class="category-username">THRILLER</div>
+    </div>
+    <div class="category-card" tabindex="0" role="button" aria-label="Categoria Drama">
+        <span class="material-icons category-icon" aria-hidden="true">theater_comedy</span>
+        <div class="category-username">DRAMA</div>
+    </div>
+    <div class="category-card" tabindex="0" role="button" aria-label="Categoria Ciência">
+        <span class="material-icons category-icon" aria-hidden="true">science</span>
+        <div class="category-username">CIÊNCIA</div>
+    </div>
+</main>
+<footer>
+    &copy; 2024 Livraria - Todos os direitos reservados
+</footer>
+</body>
+</html>
+```

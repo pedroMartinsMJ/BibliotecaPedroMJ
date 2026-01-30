@@ -1,0 +1,74 @@
+spring:
+  application:
+    name: bibliotecaPedroMJ
+
+  profiles:
+    active: test
+
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    cache: false
+    mode: HTML
+    encoding: UTF-8
+
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+      settings:
+        web-allow-others: false
+        trace: false
+
+  sql:
+    init:
+      mode: always
+
+#  datasource:
+#    url: jdbc:postgresql://localhost:5432/bibliotecaJWT
+#    username: postgres
+#    password: postgres
+#    driver-class-name: org.postgresql.Driver
+
+#  jpa:
+#    show-sql: true
+#    hibernate:
+#      ddl-auto: update
+#    properties:
+#      hibernate:
+#        format_sql: true
+#        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  mvc:
+    static-path-pattern: /**
+
+  web:
+    resources:
+      static-locations: classpath:/static/
+      cache:
+        period: 0
+
+jwt:
+  private:
+    key: classpath:app.key
+  public:
+    key: classpath:app.pub
+
+
+# ddl-auto: create-drop
+# ddl-auto: none

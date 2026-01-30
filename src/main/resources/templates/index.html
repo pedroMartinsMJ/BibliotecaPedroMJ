@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${nomeLivraria}">Livraria</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<!-- Cabeçalho -->
+<header class="header">
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-wrapper">
+                <div class="logo">
+                    <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    </svg>
+                    <h1 th:text="${nomeLivraria}">Livraria Pedro Martins</h1>
+                </div>
+                <ul class="nav-links">
+                    <li><a href="/" class="active">Início</a></li>
+                    <li><a href="/livros">Livros</a></li>
+                    <li><a href="#">Sobre</a></li><!-- em desenvolvimento -->
+                    <li><a href="#">Contato</a></li><!-- em desenvolvimento -->
+                </ul>
+                <button class="mobile-menu-toggle" aria-label="Menu">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+</header>
+
+<!-- Banner Principal -->
+<section class="hero">
+    <div class="hero-overlay"></div>
+    <div class="container">
+        <div class="hero-content">
+            <h2 class="hero-title">Bem-vindo à nossa Livraria!</h2>
+            <p class="hero-subtitle">Encontre os melhores livros para todas as idades</p>
+            <button class="btn btn-primary" onclick="window.location.href='/login'">
+                <span>Ver catálogo completo</span>
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+    <div class="hero-scroll">
+        <span>Role para explorar</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M12 5v14M5 12l7 7 7-7"/>
+        </svg>
+    </div>
+</section>
+
+<!-- Livros em Destaque -->
+<section class="destaque">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">Livros em Destaque</h2>
+            <p class="section-subtitle">Descubra nossa seleção especial de livros</p>
+        </div>
+
+        <div class="livros-grid">
+            <div class="livro-card" th:each="livro : ${livros}">
+                <div class="livro-image">
+                    <div class="livro-placeholder">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="livro-info">
+                    <h3 class="livro-title" th:text="${livro}">Título do Livro</h3>
+                    <button class="btn btn-secondary">
+                        Ver Detalhes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Rodapé -->
+<footer class="footer">
+    <div class="container">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3 th:text="${nomeLivraria}">Livraria Pedro Martins</h3>
+                <p>Sua livraria online de confiança desde 2024</p>
+            </div>
+            <div class="footer-section">
+                <h4>Links Rápidos</h4>
+                <ul>
+                    <li><a href="/">Início</a></li>
+                    <li><a href="/livros">Livros</a></li>
+                    <li><a href="/sobre">Sobre</a></li>
+                    <li><a href="/contato">Contato</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Contato</h4>
+                <ul>
+                    <li>contato@livraria.com</li>
+                    <li>(11) 1234-5678</li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 <span th:text="${nomeLivraria}">Livraria Pedro Martins</span>. Todos os direitos reservados.</p>
+        </div>
+    </div>
+</footer>
+
+<script th:src="@{/js/script.js}"></script>
+</body>
+</html>
