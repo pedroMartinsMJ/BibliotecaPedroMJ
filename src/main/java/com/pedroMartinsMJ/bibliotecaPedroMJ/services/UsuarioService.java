@@ -79,9 +79,14 @@ public class UsuarioService {
         return passwordEncoder.matches(senhaRaw, senhaEncodada);
     }
 
-    public Optional<Usuario> buscarPorId(UUID id) {
+    public Usuario buscarPorId(UUID id) {
+        Optional<Usuario> supostoUsuario = usuarioRepository.findById(id);
 
-        return usuarioRepository.findById(id);
+        if (supostoUsuario.isEmpty()){
+            throw new RuntimeException("Usuário não encontrado");
+        }
+
+        return supostoUsuario.get();
     }
 
     public Optional<Usuario> buscarPorUsername(String username) {

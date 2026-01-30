@@ -12,47 +12,30 @@ spring:
     mode: HTML
     encoding: UTF-8
 
+  # Configuração PostgreSQL
   datasource:
-    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL
-    username: sa
-    password:
-    driver-class-name: org.h2.Driver
+    url: jdbc:postgresql://localhost:5432/biblioteca_db
+    username: pedro
+    password: senha123
+    driver-class-name: org.postgresql.Driver
 
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
+    show-sql: true
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.H2Dialect
+        dialect: org.hibernate.dialect.PostgreSQLDialect
 
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
-      settings:
-        web-allow-others: false
-        trace: false
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
 
   sql:
     init:
       mode: always
-
-#  datasource:
-#    url: jdbc:postgresql://localhost:5432/bibliotecaJWT
-#    username: postgres
-#    password: postgres
-#    driver-class-name: org.postgresql.Driver
-
-#  jpa:
-#    show-sql: true
-#    hibernate:
-#      ddl-auto: update
-#    properties:
-#      hibernate:
-#        format_sql: true
-#        dialect: org.hibernate.dialect.PostgreSQLDialect
 
   mvc:
     static-path-pattern: /**
@@ -69,6 +52,12 @@ jwt:
   public:
     key: classpath:app.pub
 
+# Configuração MinIO (Custom)
+minio:
+  endpoint: http://localhost:9000
+  access-key: minioadmin
+  secret-key: minioadmin123
+  bucket-name: livros
 
 # ddl-auto: create-drop
 # ddl-auto: none

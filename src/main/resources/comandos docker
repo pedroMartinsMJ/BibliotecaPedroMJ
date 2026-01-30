@@ -1,0 +1,38 @@
+docker compose up -d
+
+Para derrubar: docker compose down
+
+Ver containers: docker compose ps
+
+Logs: docker compose logs -f
+
+🔎 Ver status e info
+docker --version
+docker info
+docker ps              # containers em execução
+docker ps -a           # todos os containers
+docker images          # imagens baixadas
+docker volume ls
+docker network ls
+
+
+▶️ Containers
+docker run hello-world
+docker start <container>
+docker stop <container>
+docker restart <container>
+docker rm <container>
+docker rm -f <container>      # remove forçando
+
+
+📦 Imagens
+docker pull postgres
+docker rmi <image>
+docker image prune            # imagens não usadas
+
+O comando mais eficiente para parar todos os containers ativos de uma vez só é:
+Bash
+docker stop $(docker ps -q)
+
+docker compose stop
+docker compose start

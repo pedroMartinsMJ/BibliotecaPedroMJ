@@ -9,9 +9,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -19,70 +21,124 @@ import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.util.List;
 
+/**
+ * Configuração de Segurança para PRODUÇÃO
+ * - Sem H2 Console
+ * - CSRF desabilitado (API REST stateless)
+ * - JWT obrigatório para rotas protegidas
+ * - CORS configurado
+ */
 @Configuration
 @EnableWebSecurity
-@Profile("!tests")
+@EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
+@Profile("!test") // Ativa em TODOS os profiles EXCETO 'test'
 public class SecurityConfig {
 
     @Value("${jwt.public.key}")
-    private RSAPublicKey key;
+    private RSAPublicKey publicKey;
+
     @Value("${jwt.private.key}")
-    private RSAPrivateKey priv;
+    private RSAPrivateKey privateKey;
 
     @Bean
-    SecurityFilterChain filterChain(HttpSecurity http) throws Exception{
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+                // Desabilita CSRF (API REST stateless com JWT)
                 .csrf(AbstractHttpConfigurer::disable)
-                .headers(headers -> headers
-                        //.frameOptions(frame -> frame.sameOrigin()) // Permite frames do mesmo origin
-                        .frameOptions(frame -> frame.disable()) // Desativa o frame options
-                )
-                .authorizeHttpRequests(
-                        auth -> auth
-                                .requestMatchers("/h2-console/**").permitAll()
-                                .requestMatchers("/", "/index", "/login", "/authenticate").permitAll()
-                                .requestMatchers("/css/**", "/js/**", "/images/**", "/static/**").permitAll()
 
-                                .requestMatchers(HttpMethod.POST, "/usuario/create").permitAll()
+                // Configuração de CORS
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-                                .anyRequest().authenticated()
+                // Política de sessão STATELESS (sem sessões HTTP)
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-                .formLogin(form -> form
-                        .loginPage("/login")
-                        //.defaultSuccessUrl("/dashboard", true) // Página após login bem-sucedido
-                        .permitAll()
+
+                // Regras de autorização
+                .authorizeHttpRequests(auth -> auth
+                        // ========== ROTAS PÚBLICAS ==========
+                        .requestMatchers("/", "/index", "/home").permitAll()
+                        .requestMatchers("/css/**", "/js/**", "/images/**", "/static/**").permitAll()
+
+                        // Autenticação
+                        .requestMatchers("/login", "/authenticate").permitAll()
+
+                        // Cadastro de usuário
+                        .requestMatchers(HttpMethod.POST, "/api/usuario/create", "/usuario/create").permitAll()
+
+                        // Documentação (Swagger, se tiver)
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+
+                        // Health check (opcional)
+                        .requestMatchers("/actuator/health").permitAll()
+
+                        // ========== ROTAS PROTEGIDAS ==========
+                        // Livros - Leitura pública, modificação autenticada
+                        .requestMatchers(HttpMethod.GET, "/api/livros/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/livros/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/livros/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/livros/**").authenticated()
+
+                        // Biblioteca pessoal - sempre autenticado
+                        .requestMatchers("/api/biblioteca/**").authenticated()
+
+                        // Todas as outras rotas requerem autenticação
+                        .anyRequest().authenticated()
                 )
-                .logout(
-                        logout -> logout
-                                .logoutUrl("/logout")
-                                .logoutSuccessUrl("/login?logout")
-                                .permitAll()
-                )
-                .oauth2ResourceServer(
-                        conf -> conf.jwt(Customizer.withDefaults())
+
+                // Configuração JWT (OAuth2 Resource Server)
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(Customizer.withDefaults())
                 );
+
         return http.build();
+    }
 
+    /**
+     * Configuração CORS para permitir requisições do frontend
+     */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(List.of(
+                "http://localhost:3000",      // React dev
+                "http://localhost:4200",      // Angular dev
+                "http://localhost:8080"       // Mesmo origin
+        ));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 
     @Bean
-    JwtDecoder jwtDecoder() {
-        return NimbusJwtDecoder.withPublicKey(key).build();
+    public JwtDecoder jwtDecoder() {
+        return NimbusJwtDecoder.withPublicKey(publicKey).build();
     }
 
     @Bean
-    JwtEncoder jwtEncoder() {
-        var jwt = new RSAKey.Builder(key).privateKey(priv).build();
-        var jwks = new ImmutableJWKSet<>(new JWKSet(jwt));
+    public JwtEncoder jwtEncoder() {
+        RSAKey jwk = new RSAKey.Builder(publicKey)
+                .privateKey(privateKey)
+                .build();
+        var jwks = new ImmutableJWKSet<>(new JWKSet(jwk));
         return new NimbusJwtEncoder(jwks);
     }
 
     @Bean
-    PasswordEncoder passwordEncoder() {
+    public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 }

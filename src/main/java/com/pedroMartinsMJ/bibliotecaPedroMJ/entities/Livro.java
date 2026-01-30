@@ -1,17 +1,22 @@
 package com.pedroMartinsMJ.bibliotecaPedroMJ.entities;
 
-import com.pedroMartinsMJ.bibliotecaPedroMJ.entities.enums.FormatoArquivo;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.entities.enums.TipoArquivo;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Data;
-import java.util.UUID;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 @Entity
 @Table(name = "livros")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Livro {
 
     @Id
@@ -21,55 +26,74 @@ public class Livro {
     @Column(nullable = false)
     private String titulo;
 
-    @Column(nullable = false, unique = true)
+    @Column(length = 2000)
+    private String descricao;
+
+    @Column(unique = true)
     private String isbn;
 
-    @Column(nullable = false)
     private String editora;
 
-    @Column(nullable = false)
+    @Column(name = "data_publicacao")
     private LocalDate dataPublicacao;
 
-    @Column(nullable = false)
-    private int numeroPaginas;
+    @Column(name = "numero_paginas")
+    private Integer numeroPaginas;
 
-    @Column(nullable = false)
     private String idioma;
 
-
-    // RELACIONAMENTO com Usuario
-    @ManyToOne
-    @JoinColumn(name = "usuario_id", nullable = false)
+    // ====== RELACIONAMENTO COM AUTOR (Usuario) ======
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "autor_id", nullable = false)
     private Usuario autor;
 
-    @OneToMany(mappedBy = "livro", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<LivroArquivo> arquivos = new HashSet<>();
+    // ====== INTEGRAÇÃO COM MinIO ======
+    @Column(name = "arquivo_key", unique = true)
+    private String arquivoKey;  // Nome único no MinIO
 
-    // Método auxiliar para adicionar um arquivo
-    public void adicionarArquivo(FormatoArquivo formato, String caminho, Long tamanho) {
-        LivroArquivo arquivo = new LivroArquivo();
-        arquivo.setFormato(formato);
-        arquivo.setCaminhoArquivo(caminho);
-        arquivo.setTamanhoBytes(tamanho);
-        arquivo.setLivro(this);
-        this.arquivos.add(arquivo);
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_arquivo")
+    private TipoArquivo tipoArquivo;  // PDF, EPUB
+
+    @Column(name = "tamanho_bytes")
+    private Long tamanhoBytes;
+
+    @Column(name = "data_upload")
+    private LocalDateTime dataUpload;
+
+    // ====== RELACIONAMENTO COM BIBLIOTECA PESSOAL ======
+    @OneToMany(mappedBy = "livro", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<BibliotecaPessoal> bibliotecasPessoais = new HashSet<>();
+
+    @Column(name = "data_cadastro")
+    private LocalDateTime dataCadastro;
+
+    @PrePersist
+    protected void onCreate() {
+        dataCadastro = LocalDateTime.now();
     }
 
-    //um livro pode estar em várias bibliotecas pessoais
-    @OneToMany(mappedBy = "livro", cascade = CascadeType.ALL)
-    private Set<BibliotecaPessoal> bibliotecasPessoais = new HashSet<>();
+    // ====== MÉTODOS AUXILIARES ======
+
+    /**
+     * Verifica se o livro possui arquivo disponível
+     */
+    public boolean temArquivo() {
+        return arquivoKey != null && !arquivoKey.isEmpty();
+    }
+
+    /**
+     * Retorna tamanho formatado (MB/KB)
+     */
+    public String getTamanhoFormatado() {
+        if (tamanhoBytes == null) return "N/A";
+
+        double kb = tamanhoBytes / 1024.0;
+        double mb = kb / 1024.0;
+
+        if (mb >= 1) {
+            return String.format("%.2f MB", mb);
+        }
+        return String.format("%.2f KB", kb);
+    }
 }
-
-/*
-
-// Para suporte a múltiplos autores (opcional, se necessário)
-@ManyToMany
-@JoinTable(
-    name = "livro_autores",
-    joinColumns = @JoinColumn(name = "livro_id"),
-    inverseJoinColumns = @JoinColumn(name = "autor_id")
-)
-private Set<Usuario> autores = new HashSet<>();
-
- */
-
