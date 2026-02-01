@@ -1,4 +1,4 @@
-package com.pedroMartinsMJ.bibliotecaPedroMJ.validacoes.exepections;
+package com.pedroMartinsMJ.bibliotecaPedroMJ.tratamentoDeErros.exceptions;
 
 import java.util.Map;
 

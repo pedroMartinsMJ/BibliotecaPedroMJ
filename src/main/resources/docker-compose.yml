@@ -1,4 +1,3 @@
-
 services:
   # PostgreSQL - Banco de dados relacional
   postgres:
@@ -14,6 +13,33 @@ services:
       - postgres-data:/var/lib/postgresql/data
     networks:
       - biblioteca-network
+
+  # pgAdmin - Interface de gerenciamento PostgreSQL
+#  pgadmin:
+#    image: dpage/pgadmin4:latest
+#    container_name: biblioteca-pgadmin
+#    environment:
+#      PGADMIN_DEFAULT_EMAIL: pedro@biblioteca.com
+#      PGADMIN_DEFAULT_PASSWORD: admin123
+#    ports:
+#      - "5050:80"
+#    volumes:
+#      - pgadmin-data:/var/lib/pgadmin
+#    networks:
+#      - biblioteca-network
+#    depends_on:
+#      - postgres
+
+  # Adminer - Interface web leve (alternativa ao pgAdmin)
+  adminer:
+    image: adminer:latest
+    container_name: biblioteca-adminer
+    ports:
+      - "8085:8080"
+    networks:
+      - biblioteca-network
+    depends_on:
+      - postgres
 
   # MinIO - Armazenamento de objetos
   minio:
@@ -33,6 +59,7 @@ services:
 
 volumes:
   postgres-data:
+  pgadmin-data:
   minio-data:
 
 networks:

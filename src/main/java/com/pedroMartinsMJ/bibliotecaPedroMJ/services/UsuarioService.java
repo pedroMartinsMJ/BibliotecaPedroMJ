@@ -4,7 +4,7 @@ import com.pedroMartinsMJ.bibliotecaPedroMJ.entities.Role;
 import com.pedroMartinsMJ.bibliotecaPedroMJ.entities.Usuario;
 import com.pedroMartinsMJ.bibliotecaPedroMJ.repositorys.RoleRepository;
 import com.pedroMartinsMJ.bibliotecaPedroMJ.repositorys.UsuarioRepository;
-import com.pedroMartinsMJ.bibliotecaPedroMJ.validacoes.ValidacaoUsuario;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.validators.ValidacaoUsuario;
 import lombok.AllArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -24,6 +24,22 @@ public class UsuarioService {
 
     @Transactional
     public Usuario salvarUsuario(Usuario usuario) {
+
+        if (usuarioRepository.existsByUsername(usuario.getUsername())) {
+            throw new RuntimeException("Nome de usuário já está em uso");
+        }
+
+        if (usuarioRepository.existsByEmail(usuario.getEmail())) {
+            throw new RuntimeException("Email já está cadastrado");
+        }
+
+        if (usuarioRepository.existsByCpf(usuario.getCpf())) {
+            throw new RuntimeException("CPF já está cadastrado");
+        }
+
+        usuario.setCpf(usuario.getCpf().replaceAll("[^0-9]", ""));
+
+
         usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
 
         // Adiciona role padrão se não tiver nenhuma

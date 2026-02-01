@@ -1,9 +1,9 @@
-package com.pedroMartinsMJ.bibliotecaPedroMJ.validacoes;
+package com.pedroMartinsMJ.bibliotecaPedroMJ.validators;
 
 import com.pedroMartinsMJ.bibliotecaPedroMJ.entities.Usuario;
 import com.pedroMartinsMJ.bibliotecaPedroMJ.repositorys.UsuarioRepository;
 
-import com.pedroMartinsMJ.bibliotecaPedroMJ.validacoes.exepections.ValidationExceptionDeUsuario;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.tratamentoDeErros.exceptions.ValidationExceptionDeUsuario;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;

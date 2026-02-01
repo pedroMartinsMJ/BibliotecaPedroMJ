@@ -35,4 +35,4 @@ Bash
 docker stop $(docker ps -q)
 
 docker compose stop
-docker compose start
+docker compose starts

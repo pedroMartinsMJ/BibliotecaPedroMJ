@@ -27,11 +27,11 @@ public class inicializacaoTest implements CommandLineRunner {
     public void run(String... args) throws Exception {
 
         Role role = new Role();
-        role.setDescricao("dsdafsfs");
-        role.setName("ROLE_normal");
+        role.setDescricao("role para administradores do site, nela vc pode mudar estruturas da pagina, como escolher livros que estão nos destaques, ou denunciar uma conta");
+        role.setName("ROLE_ADMIN");
 
         Role role1 = new Role();
-        role1.setDescricao("normal");
+        role1.setDescricao("role para usuarios normais ");
         role1.setName("ROLE_USER");
 
         roleRepository.save(role);
@@ -46,7 +46,7 @@ public class inicializacaoTest implements CommandLineRunner {
         usuarioTest.setTelefone("31 95154485");
 
         role.setDescricao("teste");
-        role.setName("ROLE_normal");
+        role.setName("ROLE_USER");
         role.setUsuarios(usuarioTest);
 
         Livro livro = new Livro();
