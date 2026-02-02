@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="livro-id" th:content="${livroId}">
+    <title>Leitor - Biblioteca</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<header class="header">
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-wrapper">
+                <div class="logo" onclick="window.location.href='/'">
+                    <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    </svg>
+                    <h1>Biblioteca</h1>
+                </div>
+                <ul class="nav-links">
+                    <li><a href="/livros" class="active">Voltar ao catálogo</a></li>
+                    <li><a href="/login">Entrar</a></li>
+                </ul>
+                <button class="mobile-menu-toggle" aria-label="Menu">
+                    <span></span><span></span><span></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+</header>
+
+<section class="leitor-section">
+    <div class="container">
+        <div class="leitor-topbar">
+            <div class="leitor-title" id="leitor-title">Carregando...</div>
+            <div class="leitor-actions">
+                <a class="btn btn-secondary" id="btn-voltar" href="/livros">Catálogo</a>
+                <a class="btn btn-primary" id="btn-baixar" href="#" download>Baixar</a>
+            </div>
+        </div>
+
+        <div class="leitor-shell">
+            <div id="pdf-root" class="leitor-pdf" hidden>
+                <div class="leitor-pdf-toolbar">
+                    <button class="btn btn-secondary" id="pdf-prev">Página -</button>
+                    <div class="leitor-pdf-status">
+                        <span id="pdf-page">1</span>/<span id="pdf-pages">?</span>
+                    </div>
+                    <button class="btn btn-secondary" id="pdf-next">Página +</button>
+                    <button class="btn btn-secondary" id="pdf-zoom-out">-</button>
+                    <button class="btn btn-secondary" id="pdf-zoom-in">+</button>
+                </div>
+                <div class="leitor-pdf-canvas">
+                    <canvas id="pdf-canvas"></canvas>
+                </div>
+            </div>
+
+            <div id="epub-root" class="leitor-epub" hidden>
+                <div class="leitor-epub-toolbar">
+                    <button class="btn btn-secondary" id="epub-prev">Anterior</button>
+                    <button class="btn btn-secondary" id="epub-next">Próximo</button>
+                </div>
+                <div id="epub-viewer" class="leitor-epub-viewer"></div>
+            </div>
+
+            <div id="leitor-erro" class="alert alert-error" hidden>
+                <span id="leitor-erro-msg">Falha ao carregar o livro.</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js"></script>
+
+<script th:src="@{/js/script.js}"></script>
+<script th:src="@{/js/leitor.js}"></script>
+</body>
+</html>

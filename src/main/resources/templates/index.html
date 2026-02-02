@@ -27,6 +27,7 @@
                     <li><a href="/livros">Livros</a></li>
                     <li><a href="#">Sobre</a></li><!-- em desenvolvimento -->
                     <li><a href="#">Contato</a></li><!-- em desenvolvimento -->
+                    <li><a href="/login">Entrar</a></li>
                 </ul>
                 <button class="mobile-menu-toggle" aria-label="Menu">
                     <span></span>
@@ -44,8 +45,8 @@
     <div class="container">
         <div class="hero-content">
             <h2 class="hero-title">Bem-vindo à nossa Livraria!</h2>
-            <p class="hero-subtitle">Encontre os melhores livros para todas as idades</p>
-            <button class="btn btn-primary" onclick="window.location.href='/login'">
+            <p class="hero-subtitle">Leitura gratuita de obras em domínio público (PDF e EPUB)</p>
+            <button class="btn btn-primary" onclick="window.location.href='/livros'">
                 <span>Ver catálogo completo</span>
                 <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path d="M5 12h14M12 5l7 7-7 7"/>
@@ -69,24 +70,7 @@
             <p class="section-subtitle">Descubra nossa seleção especial de livros</p>
         </div>
 
-        <div class="livros-grid">
-            <div class="livro-card" th:each="livro : ${livros}">
-                <div class="livro-image">
-                    <div class="livro-placeholder">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-                        </svg>
-                    </div>
-                </div>
-                <div class="livro-info">
-                    <h3 class="livro-title" th:text="${livro}">Título do Livro</h3>
-                    <button class="btn btn-secondary">
-                        Ver Detalhes
-                    </button>
-                </div>
-            </div>
-        </div>
+        <div class="livros-grid" id="livros-destaque" aria-live="polite"></div>
     </div>
 </section>
 
@@ -122,5 +106,6 @@
 </footer>
 
 <script th:src="@{/js/script.js}"></script>
+<script th:src="@{/js/index.js}"></script>
 </body>
 </html>

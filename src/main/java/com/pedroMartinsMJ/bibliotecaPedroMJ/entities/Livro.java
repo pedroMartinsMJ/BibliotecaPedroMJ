@@ -1,5 +1,6 @@
 package com.pedroMartinsMJ.bibliotecaPedroMJ.entities;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.pedroMartinsMJ.bibliotecaPedroMJ.entities.enums.TipoArquivo;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -47,7 +48,7 @@ public class Livro {
     @JoinColumn(name = "autor_id", nullable = false)
     private Usuario autor;
 
-    // ====== INTEGRAÇÃO COM MinIO ======
+    // ====== INTEGRAÇÃO COM MinIO - ARQUIVO DO LIVRO (PDF/EPUB) ======
     @Column(name = "arquivo_key", unique = true)
     private String arquivoKey;  // Nome único no MinIO
 
@@ -61,8 +62,22 @@ public class Livro {
     @Column(name = "data_upload")
     private LocalDateTime dataUpload;
 
+    // ====== CAPA DO LIVRO (IMAGEM) ======
+    @Column(name = "capa_key", unique = true)
+    private String capaKey;  // Nome único da capa no MinIO
+
+    @Column(name = "capa_content_type", length = 50)
+    private String capaContentType;  // image/jpeg, image/png, image/webp
+
+    @Column(name = "capa_tamanho_bytes")
+    private Long capaTamanhoBytes;
+
+    @Column(name = "capa_data_upload")
+    private LocalDateTime capaDataUpload;
+
     // ====== RELACIONAMENTO COM BIBLIOTECA PESSOAL ======
     @OneToMany(mappedBy = "livro", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
     private Set<BibliotecaPessoal> bibliotecasPessoais = new HashSet<>();
 
     @Column(name = "data_cadastro")
@@ -83,12 +98,34 @@ public class Livro {
     }
 
     /**
-     * Retorna tamanho formatado (MB/KB)
+     * Verifica se o livro possui capa disponível
+     */
+    public boolean temCapa() {
+        return capaKey != null && !capaKey.isEmpty();
+    }
+
+    /**
+     * Retorna tamanho do arquivo formatado (MB/KB)
      */
     public String getTamanhoFormatado() {
         if (tamanhoBytes == null) return "N/A";
 
         double kb = tamanhoBytes / 1024.0;
+        double mb = kb / 1024.0;
+
+        if (mb >= 1) {
+            return String.format("%.2f MB", mb);
+        }
+        return String.format("%.2f KB", kb);
+    }
+
+    /**
+     * Retorna tamanho da capa formatado (MB/KB)
+     */
+    public String getCapaTamanhoFormatado() {
+        if (capaTamanhoBytes == null) return "N/A";
+
+        double kb = capaTamanhoBytes / 1024.0;
         double mb = kb / 1024.0;
 
         if (mb >= 1) {

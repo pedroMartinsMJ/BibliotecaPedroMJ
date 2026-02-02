@@ -2,7 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org" lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta username="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Livraria Pedro Martins</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -72,7 +72,7 @@
             </div>
 
             <div class="login-form-container">
-                <!-- Mensagem de sucesso (quando vem do cadastro) -->
+                <!-- Mensagem de sucesso (quando vem do cadastro ou logout) -->
                 <div th:if="${mensagemSucesso}" class="alert alert-success">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
@@ -81,7 +81,18 @@
                     <span th:text="${mensagemSucesso}"></span>
                 </div>
 
-                <form class="login-form" action="/login" method="post">
+                <!-- Mensagem de erro (credenciais inválidas) -->
+                <div th:if="${mensagemErro}" class="alert alert-error">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="15" y1="9" x2="9" y2="15"></line>
+                        <line x1="9" y1="9" x2="15" y2="15"></line>
+                    </svg>
+                    <span th:text="${mensagemErro}"></span>
+                </div>
+
+                <!-- Formulário de Login -->
+                <form class="login-form" th:action="@{/login}" method="post">
                     <h3>Acessar Conta</h3>
 
                     <div class="form-group">
@@ -91,7 +102,7 @@
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                                 <circle cx="12" cy="7" r="4"></circle>
                             </svg>
-                            <input type="text" id="username" name="username" placeholder="Digite seu usuário" required />
+                            <input type="text" id="username" name="username" placeholder="Digite seu usuário" required autofocus />
                         </div>
                     </div>
 

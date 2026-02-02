@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Biblioteca</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<header class="header">
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-wrapper">
+                <div class="logo" onclick="window.location.href='/'">
+                    <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    </svg>
+                    <h1 th:text="${nomeLivraria}">Biblioteca</h1>
+                </div>
+                <ul class="nav-links">
+                    <li><a href="/livros">Livros</a></li>
+                    <li>
+                        <form th:action="@{/logout}" method="post" style="display:inline;">
+                            <button type="submit" class="btn-link">Sair</button>
+                        </form>
+                    </li>
+                </ul>
+                <button class="mobile-menu-toggle" aria-label="Menu">
+                    <span></span><span></span><span></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+</header>
+
+<section class="destaque">
+    <div class="container">
+        <div class="livro-detalhe">
+            <h2>Você entrou com sucesso</h2>
+
+            <div class="livro-meta">
+                <span class="badge">AUTH</span>
+                <!-- Usando Spring Security dialect -->
+                <span sec:authentication="name">usuário</span>
+            </div>
+
+            <!-- Informações do usuário autenticado -->
+            <div class="user-info">
+                <p>
+                    <strong>Username:</strong>
+                    <span sec:authentication="name">-</span>
+                </p>
+
+                <!-- Exibe roles/authorities -->
+                <p>
+                    <strong>Permissões:</strong>
+                    <span sec:authentication="authorities">-</span>
+                </p>
+
+                <!-- Se for login OAuth2 (Google), mostra atributos adicionais -->
+                <div th:if="${#authorization.expression('isAuthenticated()')}">
+                    <p th:if="${#authentication.principal instanceof T(org.springframework.security.oauth2.core.user.OAuth2User)}">
+                        <strong>Nome:</strong>
+                        <span th:text="${#authentication.principal.attributes['name']}">-</span>
+                        <br/>
+                        <strong>Email:</strong>
+                        <span th:text="${#authentication.principal.attributes['email']}">-</span>
+                    </p>
+                </div>
+            </div>
+
+            <div class="livro-actions">
+                <a class="btn btn-primary" href="/livros">Ir para o catálogo</a>
+                <form th:action="@{/logout}" method="post" style="display:inline;">
+                    <button type="submit" class="btn btn-secondary">Sair</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+<footer class="footer">
+    <div class="container">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3 th:text="${nomeLivraria}">Biblioteca Pedro Martins</h3>
+                <p>Sua biblioteca online de confiança desde 2024</p>
+            </div>
+            <div class="footer-section">
+                <h4>Links Rápidos</h4>
+                <ul>
+                    <li><a href="/">Início</a></li>
+                    <li><a href="/livros">Livros</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 <span th:text="${nomeLivraria}">Biblioteca Pedro Martins</span>. Todos os direitos reservados.</p>
+        </div>
+    </div>
+</footer>
+
+<script th:src="@{/js/script.js}"></script>
+</body>
+</html>

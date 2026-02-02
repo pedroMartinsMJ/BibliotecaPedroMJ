@@ -101,6 +101,35 @@ public class MinioService {
         }
     }
 
+    public String atualizarArquivo(String fileKey, MultipartFile file) {
+        try {
+            // Remove o arquivo antigo
+            minioClient.removeObject(
+                    RemoveObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(fileKey)
+                            .build()
+            );
+
+            // Faz upload do novo arquivo mantendo o mesmo nome
+            minioClient.putObject(
+                    PutObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(fileKey)
+                            .stream(file.getInputStream(), file.getSize(), -1)
+                            .contentType(file.getContentType())
+                            .build()
+            );
+
+            log.info("Arquivo '{}' atualizado no MinIO com sucesso!", fileKey);
+            return fileKey;
+
+        } catch (Exception e) {
+            log.error("Erro ao atualizar arquivo '{}': {}", fileKey, e.getMessage());
+            throw new RuntimeException("Falha ao atualizar arquivo no MinIO", e);
+        }
+    }
+
     public String gerarUrlDownload(String fileKey) {
         try {
             return minioClient.getPresignedObjectUrl(

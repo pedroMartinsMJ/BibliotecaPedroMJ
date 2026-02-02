@@ -87,14 +87,17 @@ public class LivroController {
      * GET /api/livros/{id}/download - Download do arquivo
      */
     @GetMapping("/{id}/download")
-    public ResponseEntity<InputStreamResource> downloadArquivo(@PathVariable UUID id) {
+    public ResponseEntity<InputStreamResource> downloadArquivo(
+            @PathVariable UUID id,
+            @RequestParam(name = "inline", defaultValue = "false") boolean inline
+    ) {
         Livro livro = livroService.buscarPorId(id);
         InputStream inputStream = livroService.downloadArquivo(id);
 
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(livro.getTipoArquivo().getContentType()))
                 .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=\"" + livro.getTitulo() + "." +
+                        (inline ? "inline" : "attachment") + "; filename=\"" + livro.getTitulo() + "." +
                                 livro.getTipoArquivo().name().toLowerCase() + "\"")
                 .body(new InputStreamResource(inputStream));
     }
@@ -115,5 +118,12 @@ public class LivroController {
     public ResponseEntity<Void> deletarLivro(@PathVariable UUID id) {
         livroService.deletarLivro(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/put/arquivo")
+    public ResponseEntity<Void> atuzalizarArquivo(@Valid @ModelAttribute LivroDTO_CREATE dto ){
+        livroService.atuzalizarArquivo(dto.autorId(), dto.arquivo());
+
+        return ResponseEntity.ok().build();
     }
 }

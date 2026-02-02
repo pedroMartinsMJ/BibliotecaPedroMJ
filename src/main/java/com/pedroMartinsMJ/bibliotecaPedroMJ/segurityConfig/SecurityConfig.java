@@ -21,6 +21,7 @@ import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -59,14 +60,34 @@ public class SecurityConfig {
 
                 // Política de sessão STATELESS (sem sessões HTTP)
                 .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                        // Necessário para OAuth2 Login (usa sessão durante o handshake)
+                        session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                )
+
+                .formLogin(form -> form
+                        .loginPage("/login")                    // Página de login customizada
+                        .loginProcessingUrl("/login")           // URL que processa o POST
+                        .defaultSuccessUrl("/dashboard", true)  // Redireciona após login bem-sucedido
+                        .failureUrl("/login?error=true")        // Redireciona após falha
+                        .usernameParameter("username")          // Nome do campo de usuário
+                        .passwordParameter("password")          // Nome do campo de senha
                 )
 
                 // Regras de autorização
                 .authorizeHttpRequests(auth -> auth
                         // ========== ROTAS PÚBLICAS ==========
                         .requestMatchers("/", "/index", "/home").permitAll()
+                        .requestMatchers(
+                                "/livros",
+                                "/livros/**",
+                                "/leitor",
+                                "/leitor/**"
+                        ).permitAll()
+                        .requestMatchers("/autores/**").permitAll()
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/static/**").permitAll()
+                        .requestMatchers("/favicon.ico", "/favicon.svg").permitAll()
+                        .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
+                        .requestMatchers("/error").permitAll()
 
                         // Autenticação
                         .requestMatchers("/login", "/authenticate").permitAll()
@@ -99,12 +120,21 @@ public class SecurityConfig {
                         .jwt(Customizer.withDefaults())
                 );
 
+        // OAuth2 Login (Google)
+        http.oauth2Login(oauth2 -> oauth2
+                .loginPage("/login")
+                .defaultSuccessUrl("/dashboard", true)
+        );
+
+        http.logout(logout -> logout
+                .logoutUrl("/logout")          // define o endpoint
+                .logoutSuccessUrl("/")         // redireciona após logout
+        );
+
         return http.build();
     }
 
-    /**
-     * Configuração CORS para permitir requisições do frontend
-     */
+    // Configuração CORS para permitir requisições do frontend
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();

@@ -1,6 +1,7 @@
 package com.pedroMartinsMJ.bibliotecaPedroMJ.entities;
 
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -50,6 +51,7 @@ public class Usuario {
 
     // Relacionamentos com outras entidades do negócio
     @OneToMany(mappedBy = "autor", cascade = CascadeType.ALL)
+    @JsonManagedReference
     private Set<Livro> livros = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.EAGER)
@@ -109,4 +111,7 @@ public class Usuario {
     }
 
 
+    public boolean isAtivo() {
+        return this.ativo;
+    }
 }

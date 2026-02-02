@@ -64,18 +64,29 @@ public class UsuarioService {
     }
 
     @Transactional
-    public Usuario atualizarDados(UUID id, String nome, String email, String telefone) {
+    public Usuario atualizarDados(UUID id, Usuario UsuarioAtualizado) {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
-        validacaoUsuario.validarAtualizacao(usuarioRepository, id, usuario);
+
 
         // ❌ NÃO toca na senha, não precisa de encoder
-        usuario.setNome(nome);
-        usuario.setEmail(email);
-        usuario.setTelefone(telefone);
+        usuario.setNome(usuario.getNome());
+        usuario.setEmail(usuario.getEmail());
+        usuario.setTelefone(usuario.getTelefone());
+        usuario.setCpf(usuario.getCpf());
+
+        validacaoUsuario.validarAtualizacao(usuarioRepository, id, usuario);
 
         return usuarioRepository.save(usuario);
+    }
+
+    public void deletarUsuario(UUID id){
+        if (!usuarioRepository.existsById(id)){
+            throw new RuntimeException("Usuário não encontrado");
+        }
+
+        usuarioRepository.deleteById(id);
     }
 
     @Transactional

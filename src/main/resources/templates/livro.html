@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="livro-id" th:content="${livroId}">
+    <title>Livro - Biblioteca</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<header class="header">
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-wrapper">
+                <div class="logo" onclick="window.location.href='/'">
+                    <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    </svg>
+                    <h1>Biblioteca</h1>
+                </div>
+                <ul class="nav-links">
+                    <li><a href="/">Início</a></li>
+                    <li><a href="/livros" class="active">Livros</a></li>
+                    <li><a href="/login">Entrar</a></li>
+                </ul>
+                <button class="mobile-menu-toggle" aria-label="Menu">
+                    <span></span><span></span><span></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+</header>
+
+<section class="destaque">
+    <div class="container">
+        <div class="livro-detalhe" id="livro-detalhe" aria-live="polite"></div>
+    </div>
+</section>
+
+<footer class="footer">
+    <div class="container">
+        <div class="footer-bottom">
+            <p>&copy; 2026 Biblioteca. Leitura gratuita de obras em domínio público.</p>
+        </div>
+    </div>
+</footer>
+
+<script th:src="@{/js/script.js}"></script>
+<script th:src="@{/js/livro.js}"></script>
+</body>
+</html>
+

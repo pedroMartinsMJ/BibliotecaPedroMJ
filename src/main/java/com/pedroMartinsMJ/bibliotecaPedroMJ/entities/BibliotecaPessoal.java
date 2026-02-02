@@ -1,5 +1,6 @@
 package com.pedroMartinsMJ.bibliotecaPedroMJ.entities;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.pedroMartinsMJ.bibliotecaPedroMJ.entities.enums.StatusLeitura;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -18,10 +19,12 @@ public class BibliotecaPessoal {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id", nullable = false)
+    @JsonManagedReference
     private Usuario usuario;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "livro_id", nullable = false)
+    @JsonManagedReference
     private Livro livro;
 
     @Enumerated(EnumType.STRING)

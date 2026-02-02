@@ -6,9 +6,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-/**
- * DTO de resposta - inclui informações do autor
- */
 public record LivroDTO_RESPONSE(
         UUID id,
         String titulo,

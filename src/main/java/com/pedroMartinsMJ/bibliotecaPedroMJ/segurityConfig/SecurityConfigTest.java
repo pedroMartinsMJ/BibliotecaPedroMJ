@@ -22,8 +22,13 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.util.List;
 
 /**
  * Configuração de Segurança para TESTES
@@ -57,7 +62,17 @@ public class SecurityConfigTest {
 
                 // Política de sessão STATELESS
                 .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                        // OAuth2 Login usa sessão durante o fluxo
+                        session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                )
+
+                .formLogin(form -> form
+                        .loginPage("/login")                    // Página de login customizada
+                        .loginProcessingUrl("/login")           // URL que processa o POST
+                        .defaultSuccessUrl("/dashboard", true)  // Redireciona após login bem-sucedido
+                        .failureUrl("/login?error=true")        // Redireciona após falha
+                        .usernameParameter("username")          // Nome do campo de usuário
+                        .passwordParameter("password")          // Nome do campo de senha
                 )
 
                 // Regras de autorização para TESTES
@@ -67,10 +82,14 @@ public class SecurityConfigTest {
 
                         // ========== ROTAS PÚBLICAS ==========
                         .requestMatchers("/", "/index", "/home").permitAll()
+                        .requestMatchers("/autores/**").permitAll()
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/static/**").permitAll()
+                        .requestMatchers("/favicon.ico", "/favicon.svg").permitAll()
 
                         // Autenticação
                         .requestMatchers("/login", "/authenticate").permitAll()
+                        .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
+                        .requestMatchers("/error").permitAll()
 
                         // Cadastro
                         .requestMatchers(HttpMethod.POST, "/api/usuario/create", "/usuario/create").permitAll()
@@ -94,7 +113,36 @@ public class SecurityConfigTest {
                         .jwt(Customizer.withDefaults())
                 );
 
+        // OAuth2 Login (Google) também nos testes, para facilitar validação manual
+        http.oauth2Login(oauth2 -> oauth2
+                .loginPage("/login")
+                .defaultSuccessUrl("/dashboard", true)
+        );
+
+        http.logout(logout -> logout
+                .logoutUrl("/logout")          // define o endpoint
+                .logoutSuccessUrl("/")         // redireciona após logout
+        );
+
         return http.build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(List.of(
+                "http://localhost:3000",      // React dev
+                "http://localhost:4200",      // Angular dev
+                "http://localhost:8080"       // Mesmo origin
+        ));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 
     @Bean
