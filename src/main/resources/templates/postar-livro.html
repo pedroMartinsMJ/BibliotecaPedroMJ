@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Postar Livro | Livraria Pedro Martins</title>
+    <!-- Inclua o CSS que você enviou aqui -->
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+<!-- Header (Se necessário) -->
+<header class="header">
+    <div class="container">
+        <nav class="navbar">
+            <div class="nav-wrapper">
+                <div class="logo">
+                    <!-- Ícone SVG -->
+                    <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    </svg>
+                    <h1>Livraria Pedro Martins</h1>
+                </div>
+                <ul class="nav-links">
+                    <li><a href="/">Início</a></li>
+                    <li><a href="/livros">Livros</a></li>
+                    <li><a href="/sobre">Sobre</a></li>
+                    <li><a href="/contato">Contato</a></li>
+                </ul>
+            </div>
+        </nav>
+    </div>
+</header>
+
+<!-- Seção de Postagem de Livro -->
+<section class="postagem">
+    <div class="container">
+        <!-- Informações sobre postar -->
+        <div class="postagem-info">
+            <h2>Postar seu Livro</h2>
+            <p>Compartilhe suas obras inéditas com o mundo</p>
+
+            <div class="benefits-list">
+                <div class="benefit-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                        <path d="M2 17l10 5 10-5M2 12l10 5 10-5"></path>
+                    </svg>
+                    <div>
+                        <h4>Publique suas obras</h4>
+                        <p>Disponibilize seus livros na plataforma</p>
+                    </div>
+                </div>
+
+                <div class="benefit-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    <div>
+                        <h4>Alcance milhares de leitores</h4>
+                        <p>Conecte-se com seu público</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulário de Upload -->
+        <div class="postagem-form">
+            <form>
+                <div class="form-group">
+                    <label for="titulo">Título do Livro</label>
+                    <div class="input-wrapper">
+                        <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                        </svg>
+                        <input type="text" id="titulo" placeholder="Digite o título...">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="autor">Nome do Autor</label>
+                    <div class="input-wrapper">
+                        <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                        </svg>
+                        <input type="text" id="autor" placeholder="Seu nome...">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="arquivo">Arquivo (PDF ou EPUB)</label>
+                    <div class="input-wrapper">
+                        <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                        </svg>
+                        <input type="file" id="arquivo" accept=".pdf,.epub">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="descricao">Descrição</label>
+                    <div class="input-wrapper">
+                        <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                        </svg>
+                        <textarea id="descricao" placeholder="Breve descrição da obra..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Checkbox de Termos -->
+                <div class="checkbox-group">
+                    <div class="checkbox-label">
+                        <input type="checkbox" id="termos" required>
+                        <div class="checkbox-custom"></div>
+                        <span class="checkbox-text">
+                                Eu declaro que esta obra é minha, sem direitos autorais, e que estou de acordo com os <a href="/termos">Termos de Uso</a>.
+                            </span>
+                    </div>
+                </div>
+
+                <!-- Botão de Submit -->
+                <button type="submit" class="btn btn-primary btn-block">Publicar Livro</button>
+
+                <!-- Rodapé do Formulário -->
+                <div class="form-footer">
+                    <p>Pronto para publicar? <a href="/livros">Ver Catálogo</a></p>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+
+<!-- Rodapé -->
+<footer class="footer">
+    <div class="container">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3 th:text="${nomeLivraria}">Livraria Pedro Martins</h3>
+                <p>Sua livraria online de confiança desde 2024</p>
+            </div>
+            <div class="footer-section">
+                <h4>Links Rápidos</h4>
+                <ul>
+                    <li><a href="/">Início</a></li>
+                    <li><a href="/livros">Livros</a></li>
+                    <li><a href="/sobre">Sobre</a></li>
+                    <li><a href="/contato">Contato</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Contato</h4>
+                <ul>
+                    <li>contato@livrariapedro.com</li>
+                    <li>(11) 1234-5678</li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 <span th:text="${nomeLivraria}">Livraria Pedro Martins</span>. Todos os direitos reservados.</p>
+        </div>
+    </div>
+</footer>
+
+<!-- Script -->
+<script th:src="@{/js/postagem.js}"></script>
+</body>
+</html>

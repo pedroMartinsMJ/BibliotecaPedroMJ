@@ -79,4 +79,9 @@ public class ViewController {
         return "dashboard"; // Página após login (área autenticada)
     }
 
+    @GetMapping("/postar-livro")
+    public String postarLivro(){
+        return "postar-livro";
+    }
+
 }

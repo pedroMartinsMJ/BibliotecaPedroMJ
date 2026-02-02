@@ -14,6 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
 import java.util.List;
@@ -29,9 +30,9 @@ public class LivroController {
     private final LivroService livroService;
     private final LivroMapper livroMapper;
 
-    /**
-     * POST /api/livros - Criar livro com arquivo
-     */
+    // ========================================
+    // CRIAR LIVRO (com arquivo e capa opcional)
+    // ========================================
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<LivroDTO_RESPONSE> criarLivro(
             @Valid @ModelAttribute LivroDTO_CREATE dto
@@ -40,7 +41,7 @@ public class LivroController {
         Livro livro = livroMapper.toEntity(dto);
 
         // Salva (PostgreSQL + MinIO)
-        Livro livroSalvo = livroService.criarLivro(livro, dto.arquivo());
+        Livro livroSalvo = livroService.criarLivro(livro, dto.arquivo(), dto.capa());
 
         // Entity → DTO Response
         LivroDTO_RESPONSE response = livroMapper.toResponse(livroSalvo);
@@ -48,9 +49,9 @@ public class LivroController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    /**
-     * GET /api/livros - Listar todos
-     */
+    // ========================================
+    // LISTAR E BUSCAR
+    // ========================================
     @GetMapping
     public ResponseEntity<List<LivroDTO_RESPONSE>> listarTodos() {
         List<LivroDTO_RESPONSE> livros = livroService.listarTodos()
@@ -61,18 +62,12 @@ public class LivroController {
         return ResponseEntity.ok(livros);
     }
 
-    /**
-     * GET /api/livros/{id} - Buscar por ID
-     */
     @GetMapping("/{id}")
     public ResponseEntity<LivroDTO_RESPONSE> buscarPorId(@PathVariable UUID id) {
         Livro livro = livroService.buscarPorId(id);
         return ResponseEntity.ok(livroMapper.toResponse(livro));
     }
 
-    /**
-     * GET /api/livros/autor/{autorId} - Buscar por autor
-     */
     @GetMapping("/autor/{autorId}")
     public ResponseEntity<List<LivroDTO_RESPONSE>> buscarPorAutor(@PathVariable UUID autorId) {
         List<LivroDTO_RESPONSE> livros = livroService.buscarPorAutor(autorId)
@@ -83,9 +78,9 @@ public class LivroController {
         return ResponseEntity.ok(livros);
     }
 
-    /**
-     * GET /api/livros/{id}/download - Download do arquivo
-     */
+    // ========================================
+    // DOWNLOAD DO ARQUIVO (PDF/EPUB)
+    // ========================================
     @GetMapping("/{id}/download")
     public ResponseEntity<InputStreamResource> downloadArquivo(
             @PathVariable UUID id,
@@ -102,28 +97,85 @@ public class LivroController {
                 .body(new InputStreamResource(inputStream));
     }
 
-    /**
-     * GET /api/livros/{id}/link - Gerar link temporário
-     */
     @GetMapping("/{id}/link")
     public ResponseEntity<String> gerarLinkDownload(@PathVariable UUID id) {
         String url = livroService.gerarLinkDownload(id);
         return ResponseEntity.ok(url);
     }
 
-    /**
-     * DELETE /api/livros/{id} - Deletar livro
-     */
+    // ========================================
+    // DOWNLOAD DA CAPA (IMAGEM)
+    // ========================================
+    @GetMapping("/{id}/capa")
+    public ResponseEntity<InputStreamResource> downloadCapa(
+            @PathVariable UUID id,
+            @RequestParam(name = "inline", defaultValue = "true") boolean inline
+    ) {
+        Livro livro = livroService.buscarPorId(id);
+
+        if (!livro.temCapa()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        InputStream inputStream = livroService.downloadCapa(id);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(livro.getCapaContentType()))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        (inline ? "inline" : "attachment") + "; filename=\"capa_" + livro.getTitulo() + ".jpg\"")
+                .header(HttpHeaders.CACHE_CONTROL, "max-age=86400") // Cache de 24h
+                .body(new InputStreamResource(inputStream));
+    }
+
+    @GetMapping("/{id}/capa/url")
+    public ResponseEntity<String> gerarUrlCapa(@PathVariable UUID id) {
+        Livro livro = livroService.buscarPorId(id);
+
+        if (!livro.temCapa()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        String url = livroService.gerarLinkCapa(id);
+        return ResponseEntity.ok(url);
+    }
+
+    // ========================================
+    // ATUALIZAR CAPA
+    // ========================================
+
+    @PutMapping("/{id}/capa")
+    public ResponseEntity<LivroDTO_RESPONSE> atualizarCapa(
+            @PathVariable UUID id,
+            @RequestParam("capa") MultipartFile capa
+    ) {
+        livroService.atualizarCapa(id, capa);
+        Livro livroAtualizado = livroService.buscarPorId(id);
+        return ResponseEntity.ok(livroMapper.toResponse(livroAtualizado));
+    }
+
+    @DeleteMapping("/{id}/capa")
+    public ResponseEntity<Void> removerCapa(@PathVariable UUID id) {
+        livroService.removerCapa(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ========================================
+    // ATUALIZAR E DELETAR
+    // ========================================
+
+    @PutMapping("/{id}/arquivo")
+    public ResponseEntity<LivroDTO_RESPONSE> atualizarArquivo(
+            @PathVariable UUID id,
+            @RequestParam("arquivo") MultipartFile arquivo
+    ) {
+        livroService.atualizarArquivo(id, arquivo);
+        Livro livroAtualizado = livroService.buscarPorId(id);
+        return ResponseEntity.ok(livroMapper.toResponse(livroAtualizado));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletarLivro(@PathVariable UUID id) {
         livroService.deletarLivro(id);
         return ResponseEntity.noContent().build();
-    }
-
-    @PutMapping("/put/arquivo")
-    public ResponseEntity<Void> atuzalizarArquivo(@Valid @ModelAttribute LivroDTO_CREATE dto ){
-        livroService.atuzalizarArquivo(dto.autorId(), dto.arquivo());
-
-        return ResponseEntity.ok().build();
     }
 }
