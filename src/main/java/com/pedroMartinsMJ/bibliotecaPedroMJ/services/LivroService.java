@@ -6,6 +6,9 @@ import com.pedroMartinsMJ.bibliotecaPedroMJ.repositorys.LivroRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,11 +25,6 @@ public class LivroService {
 
     private final LivroRepository livroRepository;
     private final MinioService minioService;
-
-    @PostConstruct
-    public void init() {
-        minioService.inicializarBucket();
-    }
 
     /**
      * CRIA livro completo: salva metadados no PostgreSQL, arquivo e capa no MinIO
@@ -89,16 +87,11 @@ public class LivroService {
     }
 
     /**
-     * LISTA todos os livros com autores
+     * LISTA todos os livros com autores (paginado)
      */
     @Transactional(readOnly = true)
-    public List<Livro> listarTodos() {
-        List<Livro> livros = livroRepository.findAll();
-
-        // Força carregamento dos autores
-        livros.forEach(livro -> livro.getAutor().getNome());
-
-        return livros;
+    public Page<Livro> listarTodos(Pageable pageable) {
+        return livroRepository.findAllWithAutor(pageable);
     }
 
     /**

@@ -34,7 +34,6 @@ public record LivroDTO_RESPONSE(
     public record AutorDTO(
             UUID id,
             String nome,
-            String username,
-            String email
+            String username
     ) {}
 }

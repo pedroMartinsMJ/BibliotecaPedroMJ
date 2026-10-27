@@ -39,3 +39,10 @@ logging:
   level:
     com.pedroMartinsMJ.bibliotecaPedroMJ: DEBUG
     org.springframework.security: DEBUG
+
+# Chaves JWT dummy para testes
+jwt:
+  public:
+    key: test-public-key
+  private:
+    key: test-private-key

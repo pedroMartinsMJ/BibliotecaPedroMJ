@@ -42,6 +42,5 @@ public record LivroDTO_CREATE(
         @NotNull(message = "Arquivo é obrigatório")
         MultipartFile arquivo,
 
-        @NotNull(message = "imagem da capa é obrigatório")
         MultipartFile capa
 ) {}

@@ -8,6 +8,9 @@ import com.pedroMartinsMJ.bibliotecaPedroMJ.services.LivroService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -53,11 +56,10 @@ public class LivroController {
     // LISTAR E BUSCAR
     // ========================================
     @GetMapping
-    public ResponseEntity<List<LivroDTO_RESPONSE>> listarTodos() {
-        List<LivroDTO_RESPONSE> livros = livroService.listarTodos()
-                .stream()
-                .map(livroMapper::toResponse)
-                .collect(Collectors.toList());
+    public ResponseEntity<Page<LivroDTO_RESPONSE>> listarTodos(
+            @PageableDefault(size = 20, sort = "dataCadastro", direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable) {
+        Page<LivroDTO_RESPONSE> livros = livroService.listarTodos(pageable)
+                .map(livroMapper::toResponse);
 
         return ResponseEntity.ok(livros);
     }

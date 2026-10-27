@@ -3,7 +3,6 @@ package com.pedroMartinsMJ.bibliotecaPedroMJ.segurityConfig;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -26,6 +25,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.List;
@@ -43,11 +44,18 @@ import java.util.List;
 @Profile("!test") // Ativa em TODOS os profiles EXCETO 'test'
 public class SecurityConfig {
 
-    @Value("${jwt.public.key}")
-    private RSAPublicKey publicKey;
+    private final RSAPublicKey publicKey;
+    private final RSAPrivateKey privateKey;
 
-    @Value("${jwt.private.key}")
-    private RSAPrivateKey privateKey;
+    public SecurityConfig() throws Exception {
+        // ⚠️ Para desenvolvimento: chaves geradas em tempo de execução.
+        // Em produção, configure chaves RSA estáveis via aplicação.properties
+        KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
+        keyGen.initialize(2048);
+        KeyPair keyPair = keyGen.generateKeyPair();
+        this.publicKey = (RSAPublicKey) keyPair.getPublic();
+        this.privateKey = (RSAPrivateKey) keyPair.getPrivate();
+    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {

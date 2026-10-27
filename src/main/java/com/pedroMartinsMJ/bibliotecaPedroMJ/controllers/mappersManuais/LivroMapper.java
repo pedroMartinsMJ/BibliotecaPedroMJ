@@ -52,8 +52,7 @@ public class LivroMapper {
             autorDTO = new AutorDTO(
                     livro.getAutor().getId(),
                     livro.getAutor().getNome(),
-                    livro.getAutor().getUsername(),
-                    livro.getAutor().getEmail()
+                    livro.getAutor().getUsername()
             );
         }
 

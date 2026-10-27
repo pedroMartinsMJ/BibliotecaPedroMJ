@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -75,7 +76,8 @@ public class UsuarioController {
 
     @GetMapping("/usuario/tudo")
     @ResponseBody
-    public ResponseEntity<List<UsuarioDTO_RESPONSE>> listartudo (){
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<List<UsuarioDTO_RESPONSE>> listartudo () {
         List<UsuarioDTO_RESPONSE> listaDeUsusariosDTOs = usuarioRepository
                 .findAll()
                 .stream()

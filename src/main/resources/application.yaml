@@ -15,8 +15,8 @@ spring:
   # Configuração PostgreSQL
   datasource:
     url: jdbc:postgresql://localhost:5432/biblioteca_db
-    username: pedro
-    password: senha123
+    username: ${DB_USERNAME:pedro}
+    password: ${DB_PASSWORD:senha123}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -60,16 +60,16 @@ spring:
 
 jwt:
   private:
-    key: classpath:app.key
+    key: ${JWT_PRIVATE_KEY:classpath:app.key}
   public:
-    key: classpath:app.pub
+    key: ${JWT_PUBLIC_KEY:classpath:app.pub}
 
 # Configuração MinIO (Custom)
 minio:
-  endpoint: http://localhost:9000
-  access-key: minioadmin
-  secret-key: minioadmin123
-  bucket-name: livros
+  endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+  access-key: ${MINIO_ACCESS_KEY:minioadmin}
+  secret-key: ${MINIO_SECRET_KEY:minioadmin123}
+  bucket-name: ${MINIO_BUCKET_NAME:livros}
 
 # ddl-auto: create-drop
 # ddl-auto: none

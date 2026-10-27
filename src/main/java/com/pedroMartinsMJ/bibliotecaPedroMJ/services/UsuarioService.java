@@ -64,17 +64,17 @@ public class UsuarioService {
     }
 
     @Transactional
-    public Usuario atualizarDados(UUID id, Usuario UsuarioAtualizado) {
+    public Usuario atualizarDados(UUID id, Usuario usuarioAtualizado) {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
 
 
-        // ❌ NÃO toca na senha, não precisa de encoder
-        usuario.setNome(usuario.getNome());
-        usuario.setEmail(usuario.getEmail());
-        usuario.setTelefone(usuario.getTelefone());
-        usuario.setCpf(usuario.getCpf());
+        // ✅ Atualiza com os dados recebidos no DTO (senha não é alterada aqui)
+        usuario.setNome(usuarioAtualizado.getNome());
+        usuario.setEmail(usuarioAtualizado.getEmail());
+        usuario.setTelefone(usuarioAtualizado.getTelefone());
+        usuario.setCpf(usuarioAtualizado.getCpf());
 
         validacaoUsuario.validarAtualizacao(usuarioRepository, id, usuario);
 

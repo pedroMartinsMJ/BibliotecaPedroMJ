@@ -1,6 +1,8 @@
 package com.pedroMartinsMJ.bibliotecaPedroMJ.repositorys;
 
 import com.pedroMartinsMJ.bibliotecaPedroMJ.entities.Livro;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,9 +15,15 @@ import java.util.UUID;
 public interface LivroRepository extends JpaRepository<Livro, UUID> {
 
     /**
-     * Busca livros por autor
+     * Busca livros por autor com paginação
      */
-    List<Livro> findByAutorId(UUID autorId);
+    Page<Livro> findByAutorId(UUID autorId, Pageable pageable);
+
+    /**
+     * Busca livros com paginação e autor carregado (evita N+1)
+     */
+    @Query("SELECT l FROM Livro l JOIN FETCH l.autor")
+    Page<Livro> findAllWithAutor(Pageable pageable);
 
     /**
      * Busca livros por título (case insensitive)
