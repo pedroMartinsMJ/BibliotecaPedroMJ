@@ -22,7 +22,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.InputStream;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/livros")
@@ -71,11 +70,11 @@ public class LivroController {
     }
 
     @GetMapping("/autor/{autorId}")
-    public ResponseEntity<List<LivroDTO_RESPONSE>> buscarPorAutor(@PathVariable UUID autorId) {
-        List<LivroDTO_RESPONSE> livros = livroService.buscarPorAutor(autorId)
-                .stream()
-                .map(livroMapper::toResponse)
-                .collect(Collectors.toList());
+    public ResponseEntity<Page<LivroDTO_RESPONSE>> buscarPorAutor(
+            @PathVariable UUID autorId,
+            @PageableDefault(size = 20, sort = "dataCadastro", direction = org.springframework.data.domain.Sort.Direction.DESC) Pageable pageable) {
+        Page<LivroDTO_RESPONSE> livros = livroService.buscarPorAutor(autorId, pageable)
+                .map(livroMapper::toResponse);
 
         return ResponseEntity.ok(livros);
     }

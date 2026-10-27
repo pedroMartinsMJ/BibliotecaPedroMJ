@@ -98,8 +98,8 @@ public class LivroService {
      * BUSCA livros por autor
      */
     @Transactional(readOnly = true)
-    public List<Livro> buscarPorAutor(UUID autorId) {
-        return livroRepository.findByAutorId(autorId);
+    public Page<Livro> buscarPorAutor(UUID autorId, Pageable pageable) {
+        return livroRepository.findByAutorId(autorId, pageable);
     }
 
     /**
