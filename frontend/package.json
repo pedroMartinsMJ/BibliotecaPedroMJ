@@ -1,0 +1,21 @@
+{
+  "name": "bibliotecapedromj",
+  "version": "1.0.0",
+  "description": "> Backend de uma biblioteca digital para livros de domínio público, desenvolvido com Spring Boot, focado em leitura e postagem de livros sem direitos autorais.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pedroMartinsMJ/BibliotecaPedroMJ.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/pedroMartinsMJ/BibliotecaPedroMJ/issues"
+  },
+  "homepage": "https://github.com/pedroMartinsMJ/BibliotecaPedroMJ#readme"
+}
