@@ -42,129 +42,6 @@ O projeto foi desenvolvido com foco em **boas práticas de engenharia de softwar
 ├─────────────────────────────────────────────────────────────┤
 │                    Camada de Persistência                    │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
-│  │  LivroRepository│  │  UsuarioRepository│ │  RoleRepository  │     │
-│  └──────────────┘  └──────────────┘  └──────────────┘     │
-├─────────────────────────────────────────────────────────────┤
-│                    Infraestrutura                           │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
-│  │  PostgreSQL     │  │  MinIO (S3)     │  │  Spring Security │     │
-│  └──────────────┘  └──────────────┘  └──────────────┘     │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Princípios aplicados:
-- **Separação de camadas**: Controller → Service → Repository → Entity
-- **DTO Pattern**: Entidades nunca expostas diretamente na API
-- **Mapper Pattern**: Conversão manual entre Entity e DTO
-- **Validação customizada**: CPF brasileiro com algoritmo real de dígitos verificadores
-- **Tratamento global de erros**: `@RestControllerAdvice` padroniza respostas
-
----
-
-## 🛠️ Tecnologias
-
-| Categoria | Tecnologia | Versão |
-|-----------|-----------|--------|
-| Framework | Spring Boot | 4.1.2 (LTS) |
-| Linguagem | Java | 21 (LTS) |
-| Banco de Dados | PostgreSQL | 15 |
-| Object Storage | MinIO | 8.5.7 |
-| Segurança | Spring Security + JWT (Nimbus) | 4.x |
-| OAuth2 | Google Login | - |
-| Template Engine | Thymeleaf | - |
-| Build | Maven | 3.9.12 |
-| Containerização | Docker Compose | - |
-| Testes | JUnit 5 + Mockito | - |
-
----
-
-## ✨ Funcionalidades
-
-### 📖 Livros
-- ✅ Listagem paginada de livros (20 itens/página)
-- ✅ Busca por ID com autor carregado (JOIN FETCH - sem N+1)
-- ✅ Busca por autor
-- ✅ Upload de arquivo (PDF/EPUB, até 50MB)
-- ✅ Upload de capa (JPEG/PNG/WebP, até 5MB)
-- ✅ Download de arquivo (streaming)
-- ✅ Download de capa (com cache de 24h)
-- ✅ Geração de URL pré-assinada (7 dias)
-- ✅ Deleção completa (arquivo + capa + metadados)
-- ✅ Validação de ISBN duplicado
-
-### 👤 Usuários
-- ✅ Cadastro com validação de CPF brasileiro
-- ✅ Criptografia de senha com BCrypt
-- ✅ Atribuição automática de role `ROLE_USER`
-- ✅ Validação de duplicidade (username, email, CPF, telefone)
----
-
-## 🚀 Como Rodar o Projeto
-
-### Pré-requisitos
-- Java 21 (LTS)
-- Maven 3.9+
-- Docker e Docker Compose
-
-### 1. Clone o repositório
-```bash
-git clone https://github.com/pedroMartinsMJ/BibliotecaPedroMJ.git
-cd BibliotecaPedroMJ
-```
-
-### 2. Suba a infraestrutura (PostgreSQL + MinIO)
-```bash
-cd src/main/resources
-docker compose up -d
-```
-
-### 3. Configure as variáveis de ambiente (opcional)
-```bash
-# Windows (PowerShell)
-$env:DB_USERNAME="pedro"
-$env:DB_PASSWORD="senha123"
-$env:MINIO_ACCESS_KEY="minioadmin"
-$env:MINIO_SECRET_KEY="minioadmin123"
-
-# Linux/macOS
-export DB_USERNAME=pedro
-export DB_PASSWORD=senha123
-export MINIO_ACCESS_KEY=minioadmin
-export MINIO_SECRET_KEY=minioadmin123
-```
-
-### 4. Execute a aplicação
-```bash
-./mvnw spring-boot:run
-```
-
-A aplicação estará disponível em: `http://localhost:8080`
-
-### 5. Acesse o MinIO Console
-- URL: `http://localhost:9001`
----
-
-## 🧪 Testes
-
-```bash
-# Rodar todos os testes
-./mvnw test
-
-# Rodar um teste específico
-./mvnw test -Dtest=CPFValidatorTest
-```
-
-### Cobertura de testes
-| Classe | Testes | Cobertura |
-|--------|--------|-----------|
-| `CPFValidatorTest` | 11 | Algoritmo de CPF, formatação, nulos, letras |
-| `LivroControllerTest` | 3 | Endpoints REST (público, auth, criação) |
-| `UsuarioServiceTest` | 10 | Cadastro, atualização, deleção, busca, senha |
-| `ValidacaoUsuarioTest` | 9 | Duplicidade, validação de atualização |
-| `LivroServiceTest` | 11 | Validação de arquivo, capa, ISBN, busca, deleção |
-| `BibliotecaPedroMjApplicationTests` | 1 | Contexto da aplicação |
-| **Total** | **45** | **BUILD SUCCESS** ✅ |
-
 ---
 
 ## 📡 Endpoints da API
@@ -201,9 +78,56 @@ A aplicação estará disponível em: `http://localhost:8080`
 |--------|----------|-----------|
 | `POST` | `/authenticate` | Login (retorna JWT) |
 | `GET` | `/login` | Página de login |
+
 ---
 
-## 📁 Estrutura do Projeto
+## 🌐 Páginas Web (Thymeleaf)
+
+---
+
+## 🛠️ Ambientes de Execução (Scripts)
+
+O projeto já vem com scripts unificados para facilitar o gerenciamento dos ambientes. Há versões para **Linux/Mac** (.sh) e **Windows** (.bat).
+
+### 🐧 Linux / Mac (Git Bash)
+
+| Script | Descrição |
+|--------|-----------|
+| ./run-all.sh | Menu interativo completo (Development/Test, Production, Tests só, Compilar Angular) |
+| ./start-menu.sh | Mesmo menu, com interface alternativa |
+
+### 🪟 Windows
+
+| Script | Descrição |
+|--------|-----------|
+| 
+un-all.bat | Menu interativo completo (Development/Test, Production, Tests só, Compilar Angular) |
+| start-menu.bat | Mesmo menu, com interface alternativa |
+
+### Opções do menu
+
+`
+1 - Development Angular + Spring (Test)     -> Compila Angular dev + roda Spring com perfil 'test' (H2)
+2 - Production Complete                     -> Compila Angular prod + roda Spring com perfil 'prod' (PostgreSQL)
+3 - Tests Only (Spring only)                -> Só roda Spring com perfil 'test' (H2 + console H2)
+4 - Compile Angular Only                    -> Só compila Angular (dev ou prod)
+5 - Sair
+`
+
+| URL | Descrição |
+|-----|-----------|
+| `/` | Página inicial |
+| `/livros` | Catálogo público |
+| `/livros/{id}` | Detalhe do livro |
+| `/leitor/{id}` | Leitor de PDF/EPUB |
+| `/login` | Login |
+| `/autores/cadastro` | Cadastro de autor |
+| `/dashboard` | Área autenticada |
+| `/postar-livro` | Postar novo livro |
+
+---
+
+## 📚 Estrutura do Projeto
 
 ```
 src/main/java/com/pedroMartinsMJ/bibliotecaPedroMJ/
@@ -215,50 +139,82 @@ src/main/java/com/pedroMartinsMJ/bibliotecaPedroMJ/
 │   ├── LivroController.java          # REST API de livros
 │   ├── UsuarioController.java        # REST API de usuários + Web
 │   ├── ViewController.java           # Páginas Thymeleaf
-│   ├── DTOs/
-│   │   ├── LivroDTO_CREATE.java      # DTO de criação (record)
-│   │   ├── LivroDTO_RESPONSE.java    # DTO de resposta (record)
-│   │   ├── UsuarioDTO_CREATE.java    # DTO de criação (record)
-│   │   └── UsuarioDTO_RESPONSE.java  # DTO de resposta (record)
-│   └── mappersManuais/
-│       ├── LivroMapper.java          # Entity ↔ DTO
-│       └── UsuarioMapper.java        # Entity ↔ DTO
+│   └── AuthenticateController.java   # Autenticação
 ├── entities/
-│   ├── Usuario.java                  # Entidade de usuário
-│   ├── Livro.java                    # Entidade de livro
-│   ├── Role.java                     # Entidade de role
-│   ├── BibliotecaPessoal.java        # Biblioteca do usuário
-│   └── enums/
-│       ├── FormatoArquivo.java       # PDF, EPUB
-│       ├── StatusLeitura.java        # PENDENTE, LENDO, LIDO, ABANDONADO
-│       └── TipoArquivo.java          # PDF, EPUB com contentType
+│   ├── Autor.java
+│   ├── Livro.java
+│   ├── Usuario.java
+│   └── Role.java
 ├── repositorys/
-│   ├── UsuarioRepository.java
+│   ├── AutorRepository.java
 │   ├── LivroRepository.java
-│   ├── RoleRepository.java
-│   └── BibliotecaPessoalRepository.java
-├── segurityConfig/
-│   ├── SecurityConfig.java           # Segurança para produção
-│   ├── SecurityConfigTest.java       # Segurança para testes
-│   ├── AuthenticationController.java
-│   ├── JWT/
-│   │   ├── AutheticationService.java
-│   │   └── JwtService.java
-│   └── UserDetails/
-│       ├── CustomUserDetailsService.java
-│       └── UserAuthenticated.java
+│   ├── UsuarioRepository.java
+│   └── RoleRepository.java
 ├── services/
 │   ├── LivroService.java             # Lógica de negócio de livros
 │   ├── UsuarioService.java           # Lógica de negócio de usuários
 │   └── MinioService.java             # Integração com MinIO
+├── segregation/
+│   └── interfaces/
+│       └── MinioInterface.java
+├── segurityConfig/
+## 🔐 Segurança
+
+- ✅ Autenticação via JWT (RSA 2048 bits)
+- ✅ OAuth2 Login (Google)
+- ✅ Controle de acesso baseado em roles (`ROLE_ADMIN`, `ROLE_USER`)
+- ✅ Endpoints públicos: leitura de livros
+- ✅ Endpoints protegidos: criação, edição, deleção
+- ✅ CORS configurado
+
+---
+
+## 📊 Validações
+
+- ✅ CPF brasileiro (algoritmo real de dígitos verificadores)
+- ✅ Email válido
+- ✅ ISBN válido (formato internacional)
+- ✅ Data de publicação não futura
+- ✅ Número de páginas > 0
+- ✅ Tamanho de arquivo (50MB) e capa (5MB)
+
+---
+
+## 🧪 Testes
+
+```bash
+# Rodar todos os testes
+./mvnw test
+
+# Rodar um teste específico
+./mvnw test -Dtest=CPFValidatorTest
+```
+
+### Relação de testes
+
+| Classe | Testes | Cobertura |
+|--------|--------|-----------|
+| `CPFValidatorTest` | 11 | Algoritmo de CPF, formatação, nulos, letras |
+| `LivroControllerTest` | 3 | Endpoints REST (público, auth, criação) |
+| `UsuarioServiceTest` | 10 | Cadastro, atualização, deleção, busca, senha |
+| `ValidacaoUsuarioTest` | 9 | Duplicidade, validação de atualização |
+| `LivroServiceTest` | 11 | Validação de arquivo, capa, ISBN, busca, deleção |
+| `BibliotecaPedroMjApplicationTests` | 1 | Contexto da aplicação |
+| **Total** | **45** | **BUILD SUCCESS** ✅ |
+
+│   ├── JWT/
+│   │   ├── AutheticationService.java
+│   │   └── JwtService.java
+│   ├── AuthenticationController.java
+│   └── SecurityConfig.java
 ├── tratamentoDeErros/
 │   ├── GlobalExceptionHandler.java   # Handler global de exceções
 │   └── exceptions/
 │       └── ValidationExceptionDeUsuario.java
 └── validators/
     ├── CPFValidator.java             # Validador de CPF
-    ├── ValidCPF.java                # Anotação customizada
-    └── ValidacaoUsuario.java        # Validações de duplicidade
+    ├── ValidCPF.java                 # Anotação customizada
+    └── ValidacaoUsuario.java         # Validações de duplicidade
 ```
 
 ---
@@ -266,21 +222,27 @@ src/main/java/com/pedroMartinsMJ/bibliotecaPedroMJ/
 ## 🎓 Decisões de Arquitetura
 
 ### 1. Endpoints separados para arquivo e capa
+
 Arquivo (PDF/EPUB) e capa (imagem) são recursos diferentes com características distintas:
+
 - **Tamanho**: Arquivo até 50MB, capa até 5MB
 - **Cache**: Capa pode ser cacheada (24h), arquivo não
 - **Uso**: Capa carrega em listas, arquivo só ao ler/baixar
 
 ### 2. Validação customizada de CPF
+
 Implementação do algoritmo oficial brasileiro de dígitos verificadores, não apenas regex. Rejeita sequências inválidas (ex: 111.111.111-11).
 
 ### 3. JWT com RSA
+
 Uso de chaves assimétricas (RSA 2048 bits) em vez de HMAC, permitindo verificação de token sem compartilhar a chave privada.
 
 ### 4. MinIO para arquivos
+
 Separação de metadados (PostgreSQL) de binários (Object Storage), seguindo o padrão de armazenamento de objetos (S3-compatible).
 
 ### 5. Paginação com JOIN FETCH
+
 Evita o problema N+1 (1 query para livros + N queries para autores) usando `JOIN FETCH` no repositório.
 
 ---
@@ -300,52 +262,87 @@ Evita o problema N+1 (1 query para livros + N queries para autores) usando `JOIN
 - GitHub: [@pedroMartinsMJ](https://github.com/pedroMartinsMJ)
 - Repositório: [BibliotecaPedroMJ](https://github.com/pedroMartinsMJ/BibliotecaPedroMJ)
 
+│  │  LivroRepository│  │  UsuarioRepository│ │  RoleRepository  │     │
+│  └──────────────┘  └──────────────┘  └──────────────┘     │
+├─────────────────────────────────────────────────────────────┤
+│                    Infraestrutura                           │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
+│  │  PostgreSQL     │  │  MinIO (S3)     │  │  Spring Security │     │
+│  └──────────────┘  └──────────────┘  └──────────────┘     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Princípios aplicados:
+
+- **Separação de camadas**: Controller → Service → Repository → Entity
+- **DTO Pattern**: Entidades nunca expostas diretamente na API
+- **Mapper Pattern**: Conversão manual entre Entity e DTO
+- **Validação customizada**: CPF brasileiro com algoritmo real de dígitos verificadores
+- **Tratamento global de erros**: `@RestControllerAdvice` padroniza respostas
+
 ---
 
-## 📄 Licença
+## 🛠️ Tecnologias
 
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
-| `GET` | `/oauth2/authorization/google` | Login com Google |
+| Categoria | Tecnologia | Versão |
+|-----------|-----------|--------|
+| Framework | Spring Boot | 4.1.2 (LTS) |
+| Linguagem | Java | 21 (LTS) |
+| Banco de Dados | PostgreSQL | 15 |
+| Object Storage | MinIO | 8.5.7 |
+| Segurança | Spring Security + JWT (RSA) | 4.1.2 |
+| Autenticação | OAuth2 (Google) | 4.1.2 |
+| Template Engine | Thymeleaf | 4.1.2 |
+| Build | Maven (mvnw wrapper) | 3.9+ |
 
-### Páginas Web (Thymeleaf)
+---
 
-| URL | Descrição |
-|-----|-----------|
-| `/` | Página inicial |
-| `/livros` | Catálogo público |
-| `/livros/{id}` | Detalhe do livro |
-| `/leitor/{id}` | Leitor de PDF/EPUB |
-| `/login` | Login |
-| `/autores/cadastro` | Cadastro de autor |
-| `/dashboard` | Área autenticada |
-| `/postar-livro` | Postar novo livro |
-- Usuário: `minioadmin`
-- Senha: `minioadmin123`
+## 🚀 Como Rodar o Projeto
 
-### 6. Acesse o Adminer (PostgreSQL)
-- URL: `http://localhost:8085`
-- Sistema: PostgreSQL
-- Servidor: `postgres`
-- Usuário: `pedro`
-- Senha: `senha123`
-- Banco: `biblioteca_db`
-- ✅ Atualização de dados (sem alterar senha)
-- ✅ Atualização de senha separada
-- ✅ Deleção de usuário
-- ✅ Busca por ID, username, email
+### Pré-requisitos
 
-### 🔐 Segurança
-- ✅ Autenticação via JWT (RSA 2048 bits)
-- ✅ OAuth2 Login (Google)
-- ✅ Controle de acesso baseado em roles (`ROLE_ADMIN`, `ROLE_USER`)
-- ✅ Endpoints públicos: leitura de livros
-- ✅ Endpoints protegidos: criação, edição, deleção
-- ✅ CORS configurado
+- Java 21 (LTS)
+- Maven 3.9+
+- Docker e Docker Compose
 
-### 📊 Validações
-- ✅ CPF brasileiro (algoritmo real de dígitos verificadores)
-- ✅ Email válido
-- ✅ ISBN válido (formato internacional)
-- ✅ Data de publicação não futura
-- ✅ Número de páginas > 0
-- ✅ Tamanho de arquivo (50MB) e capa (5MB)
+### 1. Clone o repositório
+
+```bash
+git clone https://github.com/pedroMartinsMJ/BibliotecaPedroMJ.git
+cd BibliotecaPedroMJ
+```
+
+### 2. Suba a infraestrutura (PostgreSQL + MinIO)
+
+```bash
+cd src/main/resources
+docker compose up -d
+```
+
+### 3. Configure as variáveis de ambiente (opcional)
+
+```bash
+# Windows (PowerShell)
+$env:DB_USERNAME="pedro"
+$env:DB_PASSWORD="senha123"
+$env:MINIO_ACCESS_KEY="minioadmin"
+$env:MINIO_SECRET_KEY="minioadmin123"
+
+# Linux/macOS
+export DB_USERNAME=pedro
+export DB_PASSWORD=senha123
+export MINIO_ACCESS_KEY=minioadmin
+export MINIO_SECRET_KEY=minioadmin123
+```
+
+### 4. Execute a aplicação
+
+```bash
+./mvnw spring-boot:run
+```
+
+A aplicação estará disponível em: `http://localhost:8080`
+
+### 5. Acesse o MinIO Console
+
+- URL: `http://localhost:9001`
