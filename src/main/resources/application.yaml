@@ -5,13 +5,6 @@ spring:
   profiles:
     active: test
 
-  thymeleaf:
-    prefix: classpath:/templates/
-    suffix: .html
-    cache: false
-    mode: HTML
-    encoding: UTF-8
-
   # Configuração PostgreSQL
   datasource:
     url: jdbc:postgresql://localhost:5432/biblioteca_db
@@ -63,6 +56,12 @@ jwt:
     key: ${JWT_PRIVATE_KEY:classpath:app.key}
   public:
     key: ${JWT_PUBLIC_KEY:classpath:app.pub}
+
+# Chave de criptografia para dados sensíveis (AES-256)
+# Gere com: openssl rand -base64 32
+app:
+  encryption:
+    key: ${APP_ENCRYPTION_KEY:}
 
 # Configuração MinIO (Custom)
 minio:

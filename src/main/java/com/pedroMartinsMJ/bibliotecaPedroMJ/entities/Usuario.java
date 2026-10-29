@@ -1,7 +1,7 @@
 package com.pedroMartinsMJ.bibliotecaPedroMJ.entities;
 
-
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.security.EncryptingConverter;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -17,28 +17,22 @@ import java.util.UUID;
 @Setter
 public class Usuario {
 
-    // Getters e Setters
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
     @Column(unique = true, nullable = false, length = 50)
-    private String username;//nome na  plataforma
+    private String username;
 
     @Column(nullable = false)
     private String password;
 
     @Column(nullable = false, length = 100)
-    private String nome;//real
+    private String nome;
 
     @Column(unique = true, nullable = false, length = 100)
+    @Convert(converter = EncryptingConverter.class)
     private String email;
-
-    @Column(length = 14, nullable = false)
-    private String cpf;
-
-    @Column(length = 15)
-    private String telefone;
 
     @Column(name = "data_cadastro", nullable = false)
     private LocalDateTime dataCadastro = LocalDateTime.now();
@@ -49,7 +43,6 @@ public class Usuario {
     @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<BibliotecaPessoal> biblioteca_pessoal = new HashSet<>();
 
-    // Relacionamentos com outras entidades do negócio
     @OneToMany(mappedBy = "autor", cascade = CascadeType.ALL)
     @JsonManagedReference
     private Set<Livro> livros = new HashSet<>();
@@ -62,28 +55,24 @@ public class Usuario {
     )
     private Set<Role> roles = new HashSet<>();
 
-    public Usuario(){
-
+    public Usuario() {
     }
 
-    public Usuario(String username, String password, String nome, String email, String cpf, String telefone) {
+    public Usuario(String username, String password, String nome, String email) {
         this.username = username;
         this.password = password;
         this.nome = nome;
         this.email = email;
-        this.cpf = cpf;
-        this.telefone = telefone;
     }
 
-    //--------------------------------METADOS-------------------------------------------
-    public void addRole(Role roleNova){
+    public void addRole(Role roleNova) {
         roles.add(roleNova);
     }
+
     public void removeRole(Role roleR) {
         roles.remove(roleR);
     }
 
-    // Métodos auxiliares para gerenciar o relacionamento
     public void addCompra(BibliotecaPessoal biblioteca_pessoal) {
         this.biblioteca_pessoal.add(biblioteca_pessoal);
         biblioteca_pessoal.setUsuario(this);
@@ -109,7 +98,6 @@ public class Usuario {
             ativo = true;
         }
     }
-
 
     public boolean isAtivo() {
         return this.ativo;

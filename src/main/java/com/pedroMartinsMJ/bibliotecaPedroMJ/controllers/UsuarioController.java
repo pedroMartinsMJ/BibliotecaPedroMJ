@@ -12,10 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
 import java.util.UUID;
@@ -28,37 +25,6 @@ public class UsuarioController {
     private final UsuarioRepository usuarioRepository;
     private final UsuarioService usuarioService;
     private final UsuarioMapper usuarioMapper;
-
-    // ==================== ENDPOINTS WEB (para páginas HTML) ====================
-
-    /**
-     * Processa o formulário de cadastro de autor (POST)
-     */
-    @PostMapping("/autores/web/cadastro")
-    public String cadastrarAutorWeb(@Valid @ModelAttribute("autorForm") UsuarioDTO_CREATE dto,
-                                    BindingResult result,
-                                    RedirectAttributes redirectAttributes,
-                                    Model model) {
-
-        // Se houver erros de validação, volta para o formulário
-        if (result.hasErrors()) {
-            return "cadastro-autor";
-        }
-
-        try {
-            Usuario usuario = usuarioMapper.toEntity(dto);
-            Usuario novoUsuario = usuarioService.salvarUsuario(usuario);
-
-            redirectAttributes.addFlashAttribute("mensagemSucesso",
-                    "Cadastro realizado com sucesso! Faça login para continuar.");
-
-            return "redirect:/login";
-
-        } catch (RuntimeException e) {
-            model.addAttribute("mensagemErro", e.getMessage());
-            return "cadastro-autor";
-        }
-    }
 
     // ==================== ENDPOINTS REST API ====================
 

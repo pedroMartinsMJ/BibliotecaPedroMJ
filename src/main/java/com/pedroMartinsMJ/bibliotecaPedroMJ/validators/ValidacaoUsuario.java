@@ -2,7 +2,6 @@ package com.pedroMartinsMJ.bibliotecaPedroMJ.validators;
 
 import com.pedroMartinsMJ.bibliotecaPedroMJ.entities.Usuario;
 import com.pedroMartinsMJ.bibliotecaPedroMJ.repositorys.UsuarioRepository;
-
 import com.pedroMartinsMJ.bibliotecaPedroMJ.tratamentoDeErros.exceptions.ValidationExceptionDeUsuario;
 import org.springframework.stereotype.Component;
 
@@ -10,12 +9,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-
 @Component
-public class ValidacaoUsuario { //sera instanciado no service UsuarioSevicer
+public class ValidacaoUsuario {
 
-    public void validarCamposUsuario (UsuarioRepository repository, Usuario usuario){
-
+    public void validarCamposUsuario(UsuarioRepository repository, Usuario usuario) {
         Map<String, String> erros = new HashMap<>();
 
         // Validar username duplicado
@@ -33,20 +30,9 @@ public class ValidacaoUsuario { //sera instanciado no service UsuarioSevicer
             erros.put("nome", "Nome já cadastrado");
         }
 
-        if (repository.existsByCpf(usuario.getCpf())){
-            erros.put("cpf", "cpf ja cadastrado");
-        }
-
-        if (usuario.getTelefone() != null){
-            if (repository.existsByTelefone(usuario.getTelefone())){
-                erros.put("telefone", "telefone ja cadastrado");
-            }
-        }
-
         if (!erros.isEmpty()) {
             throw new ValidationExceptionDeUsuario(erros);
         }
-
     }
 
     public void validarAtualizacao(UsuarioRepository repository, UUID id, Usuario usuario) {

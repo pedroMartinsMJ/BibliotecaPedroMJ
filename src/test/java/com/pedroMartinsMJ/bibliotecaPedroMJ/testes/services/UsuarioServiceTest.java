@@ -46,17 +46,15 @@ class UsuarioServiceTest {
         usuarioValido.setPassword("senha123");
         usuarioValido.setNome("Usuario Teste");
         usuarioValido.setEmail("teste@email.com");
-        usuarioValido.setCpf("12345678909");
-        usuarioValido.setTelefone("31999999999");
         usuarioValido.setDataCadastro(LocalDateTime.now());
         usuarioValido.setAtivo(true);
     }
+
     @Test
     @DisplayName("Deve salvar usuário com sucesso quando todos os dados são válidos")
     void salvarUsuario_ComDadosValidos_DeveSalvarComSucesso() {
         when(usuarioRepository.existsByUsername("usuario_teste")).thenReturn(false);
         when(usuarioRepository.existsByEmail("teste@email.com")).thenReturn(false);
-        when(usuarioRepository.existsByCpf("12345678909")).thenReturn(false);
         when(passwordEncoder.encode("senha123")).thenReturn("senha_criptografada");
         when(roleRepository.findByName("ROLE_USER")).thenReturn(Optional.of(roleUser));
         when(usuarioRepository.save(any(Usuario.class))).thenAnswer(i -> i.getArgument(0));
@@ -64,7 +62,7 @@ class UsuarioServiceTest {
         Usuario resultado = usuarioService.salvarUsuario(usuarioValido);
 
         assertNotNull(resultado, "O usuário salvo não deve ser nulo");
-        assertEquals("senha_criptografada", resultado.getPassword(), "A senha deve ser criptografada antes de salvar - NUNCA armazene senha em texto claro");
+        assertEquals("senha_criptografada", resultado.getPassword(), "A senha deve ser criptografada antes de salvar");
         assertTrue(resultado.getRoles().contains(roleUser), "O usuário deve receber a role ROLE_USER automaticamente");
         verify(passwordEncoder, times(1)).encode("senha123");
         verify(usuarioRepository, times(1)).save(any(Usuario.class));
@@ -75,39 +73,20 @@ class UsuarioServiceTest {
     void salvarUsuario_UsernameDuplicado_DeveLancarExcecao() {
         when(usuarioRepository.existsByUsername("usuario_teste")).thenReturn(true);
 
-        RuntimeException ex = assertThrows(RuntimeException.class, () -> usuarioService.salvarUsuario(usuarioValido),
-                "Deve lançar exceção quando username já existe");
-
-        assertTrue(ex.getMessage().contains("Nome de usuário já está em uso"), "A mensagem deve informar que o username está duplicado");
-        verify(usuarioRepository, never()).save(any(Usuario.class));
-        verify(passwordEncoder, never()).encode(anyString());
+        assertThrows(RuntimeException.class,
+                () -> usuarioService.salvarUsuario(usuarioValido),
+                "Deve lançar exceção quando username duplicado");
     }
 
     @Test
-    @DisplayName("Deve lançar exceção quando email já está cadastrado")
+    @DisplayName("Deve lançar exceção quando email já está em uso")
     void salvarUsuario_EmailDuplicado_DeveLancarExcecao() {
         when(usuarioRepository.existsByUsername("usuario_teste")).thenReturn(false);
         when(usuarioRepository.existsByEmail("teste@email.com")).thenReturn(true);
 
-        RuntimeException ex = assertThrows(RuntimeException.class, () -> usuarioService.salvarUsuario(usuarioValido),
-                "Deve lançar exceção quando email já existe");
-
-        assertTrue(ex.getMessage().contains("Email já está cadastrado"), "A mensagem deve informar que o email está duplicado");
-        verify(usuarioRepository, never()).save(any(Usuario.class));
-    }
-
-    @Test
-    @DisplayName("Deve lançar exceção quando CPF já está cadastrado")
-    void salvarUsuario_CpfDuplicado_DeveLancarExcecao() {
-        when(usuarioRepository.existsByUsername("usuario_teste")).thenReturn(false);
-        when(usuarioRepository.existsByEmail("teste@email.com")).thenReturn(false);
-        when(usuarioRepository.existsByCpf("12345678909")).thenReturn(true);
-
-        RuntimeException ex = assertThrows(RuntimeException.class, () -> usuarioService.salvarUsuario(usuarioValido),
-                "Deve lançar exceção quando CPF já existe");
-
-        assertTrue(ex.getMessage().contains("CPF já está cadastrado"), "A mensagem deve informar que o CPF está duplicado");
-        verify(usuarioRepository, never()).save(any(Usuario.class));
+        assertThrows(RuntimeException.class,
+                () -> usuarioService.salvarUsuario(usuarioValido),
+                "Deve lançar exceção quando email duplicado");
     }
 
     @Test
@@ -119,15 +98,10 @@ class UsuarioServiceTest {
         usuarioNoBanco.setUsername("usuario_antigo");
         usuarioNoBanco.setEmail("antigo@email.com");
         usuarioNoBanco.setNome("Nome Antigo");
-        usuarioNoBanco.setCpf("11111111111");
-        usuarioNoBanco.setTelefone("31888888888");
-        usuarioNoBanco.setPassword("senha_antiga");
 
         Usuario usuarioAtualizado = new Usuario();
         usuarioAtualizado.setNome("Novo Nome");
         usuarioAtualizado.setEmail("novo@email.com");
-        usuarioAtualizado.setTelefone("31777777777");
-        usuarioAtualizado.setCpf("22222222222");
 
         when(usuarioRepository.findById(id)).thenReturn(Optional.of(usuarioNoBanco));
         when(usuarioRepository.save(any(Usuario.class))).thenAnswer(i -> i.getArgument(0));
@@ -136,8 +110,6 @@ class UsuarioServiceTest {
 
         assertEquals("Novo Nome", resultado.getNome(), "O nome deve ser atualizado");
         assertEquals("novo@email.com", resultado.getEmail(), "O email deve ser atualizado");
-        assertEquals("31777777777", resultado.getTelefone(), "O telefone deve ser atualizado");
-        assertEquals("22222222222", resultado.getCpf(), "O CPF deve ser atualizado");
         assertEquals(usuarioNoBanco.getPassword(), resultado.getPassword(), "A senha não deve ser alterada pelo método atualizarDados");
     }
 

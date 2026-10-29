@@ -10,8 +10,6 @@ public record UsuarioDTO_RESPONSE(
         String username,
         String nome,
         String email,
-        String cpf,
-        String telefone,
 
         List<LivroDTO_RESPONSE> livros,
 

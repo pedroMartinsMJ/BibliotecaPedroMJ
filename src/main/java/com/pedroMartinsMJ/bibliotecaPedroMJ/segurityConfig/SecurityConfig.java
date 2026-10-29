@@ -100,6 +100,11 @@ public class SecurityConfig {
                         // Autenticação
                         .requestMatchers("/login", "/authenticate").permitAll()
 
+                        // Recursos estáticos e rotas iniciais do Angular (SPA)
+                        .requestMatchers("/", "/index.html", "/livros", "/login", "/dashboard",
+                                "/css/**", "/js/**", "/images/**", "/static/**",
+                                "/favicon.ico", "/favicon.svg").permitAll()
+
                         // Cadastro de usuário
                         .requestMatchers(HttpMethod.POST, "/api/usuario/create", "/usuario/create").permitAll()
 
@@ -118,6 +123,9 @@ public class SecurityConfig {
 
                         // Biblioteca pessoal - sempre autenticado
                         .requestMatchers("/api/biblioteca/**").authenticated()
+
+                        // Fallback SPA (Angular History Mode): rotas GET servem o shell do Angular
+                        .requestMatchers(HttpMethod.GET, "/**").permitAll()
 
                         // Todas as outras rotas requerem autenticação
                         .anyRequest().authenticated()

@@ -46,3 +46,8 @@ jwt:
     key: test-public-key
   private:
     key: test-private-key
+
+# Chave de criptografia para testes (AES-256)
+app:
+  encryption:
+    key: "+s5G3B9/iucZjUV4HVie1BQgj8M6/2bquV82hLszU78="

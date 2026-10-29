@@ -30,8 +30,6 @@ class ValidacaoUsuarioTest {
         usuario.setUsername("usuario_teste");
         usuario.setNome("Usuario Teste");
         usuario.setEmail("teste@email.com");
-        usuario.setCpf("12345678909");
-        usuario.setTelefone("31999999999");
     }
 
     @Test
@@ -40,8 +38,6 @@ class ValidacaoUsuarioTest {
         when(usuarioRepository.existsByUsername("usuario_teste")).thenReturn(false);
         when(usuarioRepository.existsByEmail("teste@email.com")).thenReturn(false);
         when(usuarioRepository.existsByNome("Usuario Teste")).thenReturn(false);
-        when(usuarioRepository.existsByCpf("12345678909")).thenReturn(false);
-        when(usuarioRepository.existsByTelefone("31999999999")).thenReturn(false);
 
         assertDoesNotThrow(() -> validacaoUsuario.validarCamposUsuario(usuarioRepository, usuario),
                 "Não deve lançar exceção quando todos os campos são únicos");
@@ -53,8 +49,6 @@ class ValidacaoUsuarioTest {
         when(usuarioRepository.existsByUsername("usuario_teste")).thenReturn(true);
         when(usuarioRepository.existsByEmail("teste@email.com")).thenReturn(false);
         when(usuarioRepository.existsByNome("Usuario Teste")).thenReturn(false);
-        when(usuarioRepository.existsByCpf("12345678909")).thenReturn(false);
-        when(usuarioRepository.existsByTelefone("31999999999")).thenReturn(false);
 
         ValidationExceptionDeUsuario ex = assertThrows(ValidationExceptionDeUsuario.class,
                 () -> validacaoUsuario.validarCamposUsuario(usuarioRepository, usuario),
@@ -69,8 +63,6 @@ class ValidacaoUsuarioTest {
         when(usuarioRepository.existsByUsername("usuario_teste")).thenReturn(false);
         when(usuarioRepository.existsByEmail("teste@email.com")).thenReturn(true);
         when(usuarioRepository.existsByNome("Usuario Teste")).thenReturn(false);
-        when(usuarioRepository.existsByCpf("12345678909")).thenReturn(false);
-        when(usuarioRepository.existsByTelefone("31999999999")).thenReturn(false);
 
         ValidationExceptionDeUsuario ex = assertThrows(ValidationExceptionDeUsuario.class,
                 () -> validacaoUsuario.validarCamposUsuario(usuarioRepository, usuario),
@@ -80,45 +72,11 @@ class ValidacaoUsuarioTest {
     }
 
     @Test
-    @DisplayName("Deve lançar exceção quando CPF já existe")
-    void validarCamposUsuario_CpfDuplicado_DeveLancarExcecao() {
-        when(usuarioRepository.existsByUsername("usuario_teste")).thenReturn(false);
-        when(usuarioRepository.existsByEmail("teste@email.com")).thenReturn(false);
-        when(usuarioRepository.existsByNome("Usuario Teste")).thenReturn(false);
-        when(usuarioRepository.existsByCpf("12345678909")).thenReturn(true);
-        when(usuarioRepository.existsByTelefone("31999999999")).thenReturn(false);
-
-        ValidationExceptionDeUsuario ex = assertThrows(ValidationExceptionDeUsuario.class,
-                () -> validacaoUsuario.validarCamposUsuario(usuarioRepository, usuario),
-                "Deve lançar exceção quando CPF já existe");
-
-        assertTrue(ex.getErrors().containsKey("cpf"), "O erro deve conter o campo cpf");
-    }
-
-    @Test
-    @DisplayName("Deve ignorar telefone nulo na validação")
-    void validarCamposUsuario_TelefoneNulo_NaoDeveValidarTelefone() {
-        usuario.setTelefone(null);
-
-        when(usuarioRepository.existsByUsername("usuario_teste")).thenReturn(false);
-        when(usuarioRepository.existsByEmail("teste@email.com")).thenReturn(false);
-        when(usuarioRepository.existsByNome("Usuario Teste")).thenReturn(false);
-        when(usuarioRepository.existsByCpf("12345678909")).thenReturn(false);
-
-        assertDoesNotThrow(() -> validacaoUsuario.validarCamposUsuario(usuarioRepository, usuario),
-                "Não deve lançar exceção quando telefone é nulo (campo opcional)");
-
-        verify(usuarioRepository, never()).existsByTelefone(anyString());
-    }
-
-    @Test
     @DisplayName("Deve lançar exceção com múltiplos erros quando vários campos são duplicados")
     void validarCamposUsuario_MultiplosCamposDuplicados_DeveLancarExcecaoComTodosErros() {
         when(usuarioRepository.existsByUsername("usuario_teste")).thenReturn(true);
         when(usuarioRepository.existsByEmail("teste@email.com")).thenReturn(true);
         when(usuarioRepository.existsByNome("Usuario Teste")).thenReturn(false);
-        when(usuarioRepository.existsByCpf("12345678909")).thenReturn(false);
-        when(usuarioRepository.existsByTelefone("31999999999")).thenReturn(false);
 
         ValidationExceptionDeUsuario ex = assertThrows(ValidationExceptionDeUsuario.class,
                 () -> validacaoUsuario.validarCamposUsuario(usuarioRepository, usuario),

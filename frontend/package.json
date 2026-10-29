@@ -1,10 +1,13 @@
 {
   "name": "bibliotecapedromj",
   "version": "1.0.0",
-  "description": "> Backend de uma biblioteca digital para livros de domínio público, desenvolvido com Spring Boot, focado em leitura e postagem de livros sem direitos autorais.",
-  "main": "index.js",
+  "description": "Frontend Angular da Biblioteca Pedro Martins",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "ng": "ng",
+    "start": "ng serve",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test"
   },
   "repository": {
     "type": "git",
@@ -13,9 +16,33 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/pedroMartinsMJ/BibliotecaPedroMJ/issues"
   },
-  "homepage": "https://github.com/pedroMartinsMJ/BibliotecaPedroMJ#readme"
+  "homepage": "https://github.com/pedroMartinsMJ/BibliotecaPedroMJ#readme",
+  "dependencies": {
+    "@angular/animations": "~18.2.0",
+    "@angular/common": "~18.2.0",
+    "@angular/compiler": "~18.2.0",
+    "@angular/core": "~18.2.0",
+    "@angular/forms": "~18.2.0",
+    "@angular/platform-browser": "~18.2.0",
+    "@angular/platform-browser-dynamic": "~18.2.0",
+    "@angular/router": "~18.2.0",
+    "rxjs": "7.8.1",
+    "typescript": "5.5.4",
+    "zone.js": "0.15.0"
+  },
+  "devDependencies": {
+    "@angular-devkit/build-angular": "~18.2.0",
+    "@angular/cli": "~18.2.0",
+    "@angular/compiler-cli": "~18.2.0",
+    "@types/jasmine": "^5.1.0",
+    "jasmine-core": "^5.1.0",
+    "karma": "^6.4.4",
+    "karma-chrome-launcher": "^3.2.0",
+    "karma-coverage": "^2.2.1",
+    "karma-jasmine": "^5.1.0",
+    "karma-jasmine-html-reporter": "^2.1.0"
+  }
 }

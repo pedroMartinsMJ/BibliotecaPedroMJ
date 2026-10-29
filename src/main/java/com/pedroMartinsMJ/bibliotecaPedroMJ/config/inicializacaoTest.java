@@ -42,8 +42,6 @@ public class inicializacaoTest implements CommandLineRunner {
         usuarioTest.setNome("lucas martins");
         usuarioTest.setPassword("123");
         usuarioTest.setEmail("lucas2020@gmail.com");
-        usuarioTest.setCpf("123456789");
-        usuarioTest.setTelefone("31 95154485");
 
         role.setDescricao("teste");
         role.setName("ROLE_USER");

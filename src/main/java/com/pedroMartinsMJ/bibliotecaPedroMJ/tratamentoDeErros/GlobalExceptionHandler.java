@@ -62,11 +62,6 @@ public class GlobalExceptionHandler {
                 message.contains("usuarios.username")) {
             errors.put("username", "Nome de usuário já cadastrado no sistema");
 
-        } else if (message.contains("uk_usuario_cpf") ||
-                message.contains("cpf") ||
-                message.contains("usuarios.cpf")) {
-            errors.put("cpf", "CPF já cadastrado no sistema");
-
         } else {
             errors.put("database", "Violação de integridade de dados");
         }

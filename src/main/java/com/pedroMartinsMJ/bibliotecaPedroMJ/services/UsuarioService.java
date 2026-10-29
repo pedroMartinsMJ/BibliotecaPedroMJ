@@ -19,7 +19,7 @@ public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final RoleRepository roleRepository;
-    private final PasswordEncoder passwordEncoder; // ✅ Injeta o encoder
+    private final PasswordEncoder passwordEncoder;
     private final ValidacaoUsuario validacaoUsuario;
 
     @Transactional
@@ -32,13 +32,6 @@ public class UsuarioService {
         if (usuarioRepository.existsByEmail(usuario.getEmail())) {
             throw new RuntimeException("Email já está cadastrado");
         }
-
-        if (usuarioRepository.existsByCpf(usuario.getCpf())) {
-            throw new RuntimeException("CPF já está cadastrado");
-        }
-
-        usuario.setCpf(usuario.getCpf().replaceAll("[^0-9]", ""));
-
 
         usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
 
@@ -68,21 +61,17 @@ public class UsuarioService {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
-
-
-        // ✅ Atualiza com os dados recebidos no DTO (senha não é alterada aqui)
+        // Atualiza com os dados recebidos (senha não é alterada aqui)
         usuario.setNome(usuarioAtualizado.getNome());
         usuario.setEmail(usuarioAtualizado.getEmail());
-        usuario.setTelefone(usuarioAtualizado.getTelefone());
-        usuario.setCpf(usuarioAtualizado.getCpf());
 
         validacaoUsuario.validarAtualizacao(usuarioRepository, id, usuario);
 
         return usuarioRepository.save(usuario);
     }
 
-    public void deletarUsuario(UUID id){
-        if (!usuarioRepository.existsById(id)){
+    public void deletarUsuario(UUID id) {
+        if (!usuarioRepository.existsById(id)) {
             throw new RuntimeException("Usuário não encontrado");
         }
 
@@ -101,25 +90,18 @@ public class UsuarioService {
         usuarioRepository.save(usuario);
     }
 
-
     public boolean verificarSenha(String senhaRaw, String senhaEncodada) {
         return passwordEncoder.matches(senhaRaw, senhaEncodada);
     }
 
     public Usuario buscarPorId(UUID id) {
-        Optional<Usuario> supostoUsuario = usuarioRepository.findById(id);
-
-        if (supostoUsuario.isEmpty()){
-            throw new RuntimeException("Usuário não encontrado");
-        }
-
-        return supostoUsuario.get();
+        return usuarioRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
     }
 
     public Optional<Usuario> buscarPorUsername(String username) {
         return usuarioRepository.findByUsername(username);
     }
-
 
     public Optional<Usuario> buscarPorEmail(String email) {
         return usuarioRepository.findByEmail(email);

@@ -15,14 +15,12 @@ public class UsuarioMapper {
         this.livroMapper = livroMapper;
     }
 
-    public Usuario toEntity(UsuarioDTO_CREATE dto){
+    public Usuario toEntity(UsuarioDTO_CREATE dto) {
         Usuario usuario = new Usuario(
                 dto.username(),
                 dto.password(),
                 dto.nome(),
-                dto.email(),
-                dto.cpf(),
-                dto.telefone()
+                dto.email()
         );
 
         return usuario;
@@ -34,14 +32,10 @@ public class UsuarioMapper {
                 usuario.getUsername(),
                 usuario.getNome(),
                 usuario.getEmail(),
-                usuario.getCpf(),
-                usuario.getTelefone(),
-
                 usuario.getLivros()
                         .stream()
                         .map(livroMapper::toResponse)
                         .toList(),
-
                 usuario.getDataCadastro(),
                 usuario.isAtivo()
         );
