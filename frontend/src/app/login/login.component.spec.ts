@@ -3,7 +3,7 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { RouterTestingModule } from '@angular/router/testing';
 import { LoginComponent } from './login.component';
 import { AuthService } from '../services/auth.service';
-import { of, throwError, Subject } from 'rxjs';
+import { Subject } from 'rxjs';
 
 describe('LoginComponent', () => {
   let component: LoginComponent;
@@ -32,12 +32,12 @@ describe('LoginComponent', () => {
   it('deve chamar authService.login ao submeter formulário válido', () => {
     authService.login.and.returnValue(loginSubject.asObservable());
 
-    component.credenciais = { username: 'pedro', senha: '123' };
+    component.credenciais = { email: 'pedro@test.com', senha: '123' };
     component.entrar();
 
-    expect(authService.login).toHaveBeenCalledWith({ username: 'pedro', senha: '123' });
+    expect(authService.login).toHaveBeenCalledWith({ email: 'pedro@test.com', senha: '123' });
 
-    loginSubject.next({ token: 'abc', usuario: { id: '1', nome: 'Pedro', username: 'pedro', email: 'pedro@test.com', cpf: '12345678901', ativo: true, roles: [] } });
+    loginSubject.next({ token: 'abc', username: 'pedro', nome: 'Pedro', email: 'pedro@test.com', roles: [] });
     loginSubject.complete();
 
     expect(component.mensagemSucesso).toBe('Login realizado com sucesso!');
@@ -46,12 +46,12 @@ describe('LoginComponent', () => {
   it('deve exibir mensagem de erro quando login falha', () => {
     authService.login.and.returnValue(loginSubject.asObservable());
 
-    component.credenciais = { username: 'pedro', senha: 'errada' };
+    component.credenciais = { email: 'pedro@test.com', senha: 'errada' };
     component.entrar();
 
     loginSubject.error(new Error('Erro'));
 
-    expect(component.mensagemErro).toBe('Usuário ou senha inválidos.');
+    expect(component.mensagemErro).toBe('Email ou senha inválidos.');
     expect(component.carregando).toBeFalse();
   });
 
@@ -62,7 +62,7 @@ describe('LoginComponent', () => {
     component.entrar();
     expect(component.carregando).toBeTrue();
 
-    loginSubject.next({ token: 'abc', usuario: { id: '1', nome: 'Pedro', username: 'pedro', email: 'pedro@test.com', cpf: '12345678901', ativo: true, roles: [] } });
+    loginSubject.next({ token: 'abc', username: 'pedro', nome: 'Pedro', email: 'pedro@test.com', roles: [] });
     loginSubject.complete();
   });
 });

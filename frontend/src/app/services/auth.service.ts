@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject, tap } from 'rxjs';
-import { Credenciais, AuthResponse, TokenPayload } from '../models/auth.model';
+import { Credenciais, AuthResponse, TokenPayload, RegisterRequest } from '../models/auth.model';
 import { Usuario } from '../models/usuario.model';
 
 const TOKEN_KEY = 'biblioteca_token';
@@ -18,9 +18,19 @@ export class AuthService {
   login(credenciais: Credenciais): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${API_URL}/login`, credenciais).pipe(
       tap((response) => {
-        this.setSession(response.token, response.usuario);
+        const usuario: Usuario = {
+          username: response.username,
+          nome: response.nome,
+          email: response.email,
+          roles: response.roles,
+        };
+        this.setSession(response.token, usuario);
       })
     );
+  }
+
+  register(dados: RegisterRequest): Observable<void> {
+    return this.http.post<void>(`${API_URL}/register`, dados);
   }
 
   logout(): void {

@@ -46,7 +46,6 @@ describe('ApiService', () => {
       nome: 'Pedro',
       username: 'pedro',
       email: 'pedro@test.com',
-      cpf: '12345678901',
       password: 'senha123'
     };
     const usuarioMock = { id: '1', ...dto, ativo: true, data_cadastro: '2024-01-01', roles: [] };

@@ -3,11 +3,15 @@ package com.pedroMartinsMJ.bibliotecaPedroMJ.segurityConfig;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.segurityConfig.UserDetails.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -46,13 +50,27 @@ public class SecurityConfigTest {
 
     private final RSAPublicKey publicKey;
     private final RSAPrivateKey privateKey;
+    private final CustomUserDetailsService customUserDetailsService;
 
-    public SecurityConfigTest() throws Exception {
+    public SecurityConfigTest(CustomUserDetailsService customUserDetailsService) throws Exception {
+        this.customUserDetailsService = customUserDetailsService;
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
         keyGen.initialize(2048);
         KeyPair keyPair = keyGen.generateKeyPair();
         this.publicKey = (RSAPublicKey) keyPair.getPublic();
         this.privateKey = (RSAPrivateKey) keyPair.getPrivate();
+    }
+
+    @Bean
+    public DaoAuthenticationProvider daoAuthenticationProvider() {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(customUserDetailsService);
+        provider.setPasswordEncoder(passwordEncoder());
+        return provider;
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
     }
 
     @Bean
@@ -93,7 +111,7 @@ public class SecurityConfigTest {
                         .requestMatchers("/favicon.ico", "/favicon.svg").permitAll()
 
                         // Autenticação
-                        .requestMatchers("/login", "/authenticate").permitAll()
+                        .requestMatchers("/api/auth/**", "/login", "/authenticate").permitAll()
                         .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
                         .requestMatchers("/error").permitAll()
 

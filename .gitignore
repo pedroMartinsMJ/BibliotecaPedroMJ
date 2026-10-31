@@ -46,3 +46,5 @@ src/main/resources/static/**
 node_modules/
 .env
 package-lock.json
+frontend/.chromium-profile/
+frontend/coverage/

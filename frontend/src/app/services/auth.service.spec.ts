@@ -1,25 +1,27 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { AuthService } from './auth.service';
-import { Credenciais } from '../models/auth.model';
+import { Credenciais, AuthResponse } from '../models/auth.model';
 import { Usuario } from '../models/usuario.model';
 
 describe('AuthService', () => {
   let service: AuthService;
   let httpMock: HttpTestingController;
 
-  const credenciaisMock: Credenciais = { username: 'pedro', senha: 'senha123' };
-  const usuarioMock: Usuario = {
-    id: '1',
-    nome: 'Pedro',
+  const credenciaisMock: Credenciais = { email: 'pedro@test.com', senha: 'senha123' };
+  const authResponseMock: AuthResponse = {
+    token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIn0.fake',
     username: 'pedro',
+    nome: 'Pedro',
     email: 'pedro@test.com',
-    cpf: '12345678901',
-    ativo: true,
     roles: ['ROLE_USER']
   };
-  const tokenMock = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIn0.fake';
-  const authResponseMock = { token: tokenMock, usuario: usuarioMock };
+  const usuarioMock: Usuario = {
+    username: 'pedro',
+    nome: 'Pedro',
+    email: 'pedro@test.com',
+    roles: ['ROLE_USER']
+  };
 
   beforeEach(() => {
     localStorage.clear();
@@ -48,10 +50,10 @@ describe('AuthService', () => {
 
   it('deve fazer login, salvar token e usuário', () => {
     service.login(credenciaisMock).subscribe((res) => {
-      expect(res.token).toBe(tokenMock);
-      expect(res.usuario.username).toBe('pedro');
+      expect(res.token).toBe(authResponseMock.token);
+      expect(res.username).toBe('pedro');
       expect(service.isAuthenticated()).toBe(true);
-      expect(service.getToken()).toBe(tokenMock);
+      expect(service.getToken()).toBe(authResponseMock.token);
       expect(service.getUsuario()?.username).toBe('pedro');
     });
 
@@ -60,12 +62,20 @@ describe('AuthService', () => {
     expect(req.request.body).toEqual(credenciaisMock);
     req.flush(authResponseMock);
 
-    expect(localStorage.getItem('biblioteca_token')).toBe(tokenMock);
+    expect(localStorage.getItem('biblioteca_token')).toBe(authResponseMock.token);
     expect(localStorage.getItem('biblioteca_usuario')).toBe(JSON.stringify(usuarioMock));
   });
 
+  it('deve cadastrar usuário via register', () => {
+    service.register({ nome: 'Pedro', email: 'pedro@test.com', senha: '123' }).subscribe();
+
+    const req = httpMock.expectOne('/api/auth/register');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ nome: 'Pedro', email: 'pedro@test.com', senha: '123' });
+    req.flush(null);
+  });
+
   it('deve limpar sessão ao fazer logout', () => {
-    // Primeiro faz login para criar sessão
     service.login(credenciaisMock).subscribe();
     const reqLogin = httpMock.expectOne('/api/auth/login');
     reqLogin.flush(authResponseMock);

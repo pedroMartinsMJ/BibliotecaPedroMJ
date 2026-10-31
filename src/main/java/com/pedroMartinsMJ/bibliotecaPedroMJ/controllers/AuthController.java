@@ -64,7 +64,7 @@ public class AuthController {
 
         String token = jwtService.generateToken(authentication);
 
-        Usuario usuario = usuarioService.buscarPorEmail(request.email())
+        Usuario usuario = usuarioService.buscarPorUsername(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado após autenticação"));
 
         return ResponseEntity.ok(new LoginResponse(
