@@ -43,7 +43,7 @@ services:
 
   # MinIO - Armazenamento de objetos
   minio:
-    image: minio/minio:latest
+    image: cgr.dev/chainguard/minio:latest
     container_name: biblioteca-minio
     command: server /data --console-address ":9001"
     environment:
