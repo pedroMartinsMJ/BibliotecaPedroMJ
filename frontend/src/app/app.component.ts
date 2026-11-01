@@ -1,47 +1,103 @@
-import { Component } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Component, HostListener } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
+import { SidebarComponent } from './shared/components/sidebar/sidebar.component';
+import { HeaderComponent } from './shared/components/header/header.component';
+import { AuthService } from './services/auth.service';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, SidebarComponent, HeaderComponent, CommonModule],
   template: `
-    <header class="navbar">
-      <div class="brand">Biblioteca Pedro Martins</div>
-      <nav>
-        <a routerLink="/home" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Início</a>
-        <a routerLink="/livros" routerLinkActive="active">Livros</a>
-        <a routerLink="/login" routerLinkActive="active">Login</a>
-        <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
-      </nav>
-    </header>
-    <main>
-      <router-outlet></router-outlet>
-    </main>
+    <div class="app-layout" [class.sidebar-collapsed]="sidebarCollapsed">
+      <app-sidebar
+        [collapsed]="sidebarCollapsed"
+        [isAuthenticated]="authService.isAuthenticated()"
+        (closeRequested)="onSidebarNavigate()"
+      ></app-sidebar>
+
+      <div class="app-shell">
+        <app-header (toggleSidebar)="sidebarCollapsed = !sidebarCollapsed"></app-header>
+        <main class="app-main">
+          <router-outlet></router-outlet>
+        </main>
+      </div>
+
+      <div
+        class="sidebar-backdrop"
+        *ngIf="isMobile && !sidebarCollapsed"
+        (click)="sidebarCollapsed = true"
+      ></div>
+    </div>
   `,
   styles: [
     `
-      .navbar {
+      .app-layout {
+        min-height: 100vh;
+        background: var(--surface-alt);
+      }
+
+      .app-shell {
+        margin-left: var(--sidebar-width);
+        min-height: 100vh;
         display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0.9rem 2rem;
-        border-bottom: 1px solid #ccc;
-        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        flex-direction: column;
+        transition: margin-left 0.28s ease;
       }
-      .brand { font-weight: 700; font-size: 1.25rem; color: #111; }
-      nav a {
-        margin-left: 1.5rem;
-        text-decoration: none;
-        color: #333;
-        font-size: 0.95rem;
+
+      .app-layout.sidebar-collapsed .app-shell {
+        margin-left: var(--sidebar-width-collapsed);
       }
-      nav a:hover { color: #0066cc; }
-      nav a.active { color: #0066cc; font-weight: 700; }
-      main { padding: 1rem 2rem; min-height: 60vh; }
+
+      .app-main {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .sidebar-backdrop {
+        display: none;
+      }
+
+      @media (max-width: 960px) {
+        .app-shell,
+        .app-layout.sidebar-collapsed .app-shell {
+          margin-left: 0;
+        }
+
+        .sidebar-backdrop {
+          display: block;
+          position: fixed;
+          inset: 0;
+          z-index: 990;
+          background: rgba(15, 23, 42, 0.45);
+          backdrop-filter: blur(2px);
+        }
+      }
     `,
   ],
 })
 export class AppComponent {
-  title = 'bibliotecaPedroMJ';
+  sidebarCollapsed = false;
+  isMobile = false;
+
+  constructor(public authService: AuthService) {
+    this.isMobile = window.innerWidth <= 960;
+    this.sidebarCollapsed = this.isMobile;
+  }
+
+  @HostListener('window:resize')
+  onResize(): void {
+    const mobile = window.innerWidth <= 960;
+    if (mobile !== this.isMobile) {
+      this.isMobile = mobile;
+      this.sidebarCollapsed = mobile;
+    }
+  }
+
+  onSidebarNavigate(): void {
+    if (this.isMobile) {
+      this.sidebarCollapsed = true;
+    }
+  }
 }

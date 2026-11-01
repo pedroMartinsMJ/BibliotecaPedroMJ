@@ -1,0 +1,29 @@
+<article class="card" (click)="abrirDetalhe()" (keydown.enter)="abrirDetalhe()" tabindex="0" role="link"
+         [attr.aria-label]="'Abrir detalhes de ' + livro.titulo">
+  <div class="card-capa">
+    <img *ngIf="livro.capaUrl" [src]="livro.capaUrl" [alt]="'Capa de ' + livro.titulo"
+         class="capa-img" loading="lazy" />
+    <div *ngIf="!livro.capaUrl" class="capa-fallback" aria-hidden="true">
+      <span class="fallback-letter">{{ livro.titulo.charAt(0).toUpperCase() }}</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+           stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 3H20v18H6.5A2.5 2.5 0 0 1 4 18.5v-13A2.5 2.5 0 0 1 6.5 3z"/>
+      </svg>
+    </div>
+
+    <span class="badge-categoria" *ngIf="livro.categoria">{{ livro.categoria }}</span>
+
+    <span class="capa-cta">Ver detalhes
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M5 12h14M13 6l6 6-6 6"/>
+      </svg>
+    </span>
+  </div>
+
+  <div class="card-info">
+    <h3 class="card-titulo">{{ livro.titulo }}</h3>
+    <p class="card-autor">{{ livro.autor }}</p>
+    <span class="card-ano" *ngIf="livro.anoPublicacao">{{ livro.anoPublicacao }}</span>
+  </div>
+</article>

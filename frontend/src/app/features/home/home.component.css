@@ -1,0 +1,153 @@
+/* ==========================================================================
+   Home — Catálogo de Livros
+   ========================================================================== */
+
+.home-page {
+  display: block;
+}
+
+.count-chip {
+  padding: 0.4rem 0.9rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--brand-600);
+  background: var(--brand-soft);
+  border: 1px solid rgba(79, 110, 247, 0.22);
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* ---------- Grid ---------- */
+.livros-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(172px, 1fr));
+  gap: 1.4rem;
+}
+
+.grid-span {
+  grid-column: 1 / -1;
+}
+
+.empty-state.erro .empty-icon {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.empty-state .btn {
+  margin-top: 0.9rem;
+}
+
+/* ---------- Skeleton cards ---------- */
+.skeleton-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.skeleton-capa {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  border-radius: 0;
+}
+
+.skeleton-lines {
+  padding: 0.85rem 0.95rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.skeleton-line {
+  height: 11px;
+}
+
+.w-80 {
+  width: 80%;
+}
+
+.w-50 {
+  width: 50%;
+}
+
+/* ---------- Paginação ---------- */
+.paginacao {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-top: 2.75rem;
+}
+
+.page-btn {
+  min-width: 40px;
+  height: 40px;
+  padding: 0 0.6rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ink-700);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.page-btn:hover:not(:disabled):not(.current) {
+  border-color: var(--brand-500);
+  color: var(--brand-600);
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+}
+
+.page-btn.current {
+  background: var(--brand-gradient);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(79, 110, 247, 0.3);
+  cursor: default;
+}
+
+.page-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.page-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.page-ellipsis {
+  padding: 0 0.35rem;
+  color: var(--ink-400);
+  font-weight: 700;
+}
+
+/* ---------- Responsivo ---------- */
+@media (max-width: 960px) {
+  .livros-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .livros-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.85rem;
+  }
+
+  .count-chip {
+    display: none;
+  }
+
+  .page-btn {
+    min-width: 36px;
+    height: 36px;
+  }
+}

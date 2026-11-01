@@ -1,0 +1,287 @@
+/* ==========================================================================
+   Sidebar — Biblioteca Pedro M
+   ========================================================================== */
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: var(--sidebar-width);
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #101828 0%, #1d2942 100%);
+  color: #e2e8f0;
+  z-index: 1000;
+  transition: width 0.28s ease, transform 0.28s ease;
+  box-shadow: 1px 0 0 rgba(255, 255, 255, 0.06), 8px 0 32px rgba(15, 23, 42, 0.18);
+  overflow: hidden;
+}
+
+/* ---------- Marca ---------- */
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 1.25rem 1.15rem;
+  color: #fff;
+  text-decoration: none;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.brand-icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--brand-gradient);
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(79, 110, 247, 0.4);
+}
+
+.brand-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.brand-text {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  white-space: nowrap;
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-text small {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ---------- Navegação ---------- */
+.sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0.75rem 0.75rem 1rem;
+  scrollbar-width: thin;
+}
+
+.nav-group + .nav-group {
+  margin-top: 1.25rem;
+}
+
+.group-label {
+  margin: 0.5rem 0.75rem 0.5rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.nav-link,
+.btn-logout,
+.btn-cta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0.7rem 0.75rem;
+  border-radius: 10px;
+  color: #b6c2d6;
+  text-decoration: none;
+  font-size: 0.925rem;
+  font-weight: 500;
+  border: none;
+  background: transparent;
+  width: 100%;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  white-space: nowrap;
+  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.nav-link:hover,
+.btn-logout:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+}
+
+.nav-link.active {
+  background: linear-gradient(135deg, rgba(79, 110, 247, 0.22), rgba(139, 92, 246, 0.16));
+  color: #fff;
+  box-shadow: inset 3px 0 0 var(--brand-500);
+}
+
+.nav-icon {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+}
+
+.nav-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.nav-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- Rodapé ---------- */
+.sidebar-footer {
+  flex-shrink: 0;
+  padding: 0.85rem 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 0.35rem 0.4rem;
+  min-width: 0;
+}
+
+.user-avatar {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--brand-gradient);
+  color: #fff;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 4px 10px rgba(79, 110, 247, 0.35);
+}
+
+.user-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.user-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #f1f5f9;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-email {
+  font-size: 0.72rem;
+  color: #7c8aa5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.btn-logout {
+  color: #f0a3a3;
+}
+
+.btn-logout:hover {
+  background: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+}
+
+.btn-cta {
+  justify-content: center;
+  background: var(--brand-gradient);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 6px 16px rgba(79, 110, 247, 0.35);
+}
+
+.btn-cta:hover {
+  filter: brightness(1.07);
+  color: #fff;
+}
+
+/* ---------- Estado colapsado (desktop) ---------- */
+.sidebar.collapsed {
+  width: var(--sidebar-width-collapsed);
+}
+
+.sidebar.collapsed .brand-text,
+.sidebar.collapsed .nav-label,
+.sidebar.collapsed .user-meta,
+.sidebar.collapsed .group-label {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.sidebar.collapsed .sidebar-brand,
+.sidebar.collapsed .nav-link,
+.sidebar.collapsed .btn-logout,
+.sidebar.collapsed .btn-cta {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.sidebar.collapsed .sidebar-user {
+  justify-content: center;
+}
+
+/* ---------- Mobile: drawer off-canvas ---------- */
+@media (max-width: 960px) {
+  .sidebar {
+    width: min(84vw, 300px);
+    transform: translateX(-105%);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .sidebar.collapsed {
+    width: min(84vw, 300px);
+  }
+
+  /* No drawer mobile os rótulos ficam sempre visíveis */
+  .sidebar.collapsed .brand-text,
+  .sidebar.collapsed .nav-label,
+  .sidebar.collapsed .user-meta,
+  .sidebar.collapsed .group-label {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .sidebar.collapsed .sidebar-brand,
+  .sidebar.collapsed .nav-link,
+  .sidebar.collapsed .btn-logout,
+  .sidebar.collapsed .btn-cta {
+    justify-content: flex-start;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .sidebar.collapsed .sidebar-user {
+    justify-content: flex-start;
+  }
+}

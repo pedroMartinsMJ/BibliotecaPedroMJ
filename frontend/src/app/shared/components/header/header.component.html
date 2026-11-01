@@ -1,0 +1,57 @@
+<header class="app-header">
+  <div class="header-inner">
+    <button class="btn-menu" (click)="toggleSidebar.emit()" aria-label="Alternar menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" aria-hidden="true">
+        <path d="M4 6h16M4 12h16M4 18h10"/>
+      </svg>
+    </button>
+
+    <form class="search-area" (ngSubmit)="onBuscar()">
+      <div class="search-box">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 21l-4.3-4.3M17.5 10.5a7 7 0 1 1-14 0 7 7 0 0 1 14 0z"/>
+        </svg>
+        <input
+          type="text"
+          placeholder="Buscar por título ou autor..."
+          [(ngModel)]="busca"
+          name="busca"
+          class="search-input"
+          aria-label="Buscar livros"
+        />
+        <button type="button" *ngIf="busca" class="btn-clear" (click)="limparBusca()" aria-label="Limpar busca">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" aria-hidden="true">
+            <path d="M6 6l12 12M18 6L6 18"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="filters">
+        <label class="filter-field">
+          <span class="sr-only">Categoria</span>
+          <select [(ngModel)]="categoriaSelecionada" name="categoria" (change)="onBuscar()">
+            <option *ngFor="let c of categorias" [value]="c.value">{{ c.label }}</option>
+          </select>
+        </label>
+
+        <label class="filter-field">
+          <span class="sr-only">Ordenação</span>
+          <select [(ngModel)]="ordenacao" name="ordenacao" (change)="onBuscar()">
+            <option *ngFor="let o of ordenacoes" [value]="o.value">{{ o.label }}</option>
+          </select>
+        </label>
+
+        <button type="button" class="btn-limpar" (click)="limparFiltros()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 6h18M7 12h10M10 18h4"/>
+          </svg>
+          Limpar
+        </button>
+      </div>
+    </form>
+  </div>
+</header>

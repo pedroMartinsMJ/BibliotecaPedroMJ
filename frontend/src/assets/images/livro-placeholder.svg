@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="300" viewBox="0 0 200 300">
+  <rect width="200" height="300" fill="#e2e8f0" />
+  <text x="100" y="150" font-family="Arial, sans-serif" font-size="24" fill="#94a3b8" text-anchor="middle" font-weight="600">Capa</text>
+  <text x="100" y="185" font-family="Arial, sans-serif" font-size="16" fill="#cbd5e1" text-anchor="middle">do livro</text>
+  <path d="M 40 60 Q 100 40 160 60 L 160 240 Q 100 260 40 240 Z" fill="none" stroke="#cbd5e1" stroke-width="2" />
+</svg>

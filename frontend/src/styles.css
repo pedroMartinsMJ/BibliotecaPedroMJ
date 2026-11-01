@@ -1,1 +1,265 @@
-/* You can add global styles to this file, and also import other style files */
+/* ==========================================================================
+   Biblioteca Pedro M — Design tokens & estilos globais
+   ========================================================================== */
+
+:root {
+  /* Cores base */
+  --ink-900: #0f172a;
+  --ink-700: #334155;
+  --ink-500: #64748b;
+  --ink-400: #94a3b8;
+  --ink-200: #e2e8f0;
+  --ink-100: #f1f5f9;
+  --ink-50: #f8fafc;
+
+  /* Superfícies */
+  --surface: #ffffff;
+  --surface-alt: #f6f7fb;
+  --border: #e5e8f0;
+
+  /* Marca */
+  --brand-500: #4f6ef7;
+  --brand-600: #4353e8;
+  --brand-soft: rgba(79, 110, 247, 0.1);
+  --accent-violet: #8b5cf6;
+  --brand-gradient: linear-gradient(135deg, #4f6ef7, #8b5cf6);
+
+  /* Estados */
+  --success: #10b981;
+  --success-bg: #ecfdf5;
+  --success-ink: #065f46;
+  --danger: #ef4444;
+  --danger-bg: #fef2f2;
+  --danger-ink: #991b1b;
+
+  /* Sombras */
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 4px 14px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 14px 34px rgba(15, 23, 42, 0.13);
+
+  /* Formas */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+
+  /* Layout */
+  --sidebar-width: 264px;
+  --sidebar-width-collapsed: 76px;
+  --header-height: 68px;
+
+  /* Tipografia */
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--ink-900);
+  background: var(--surface-alt);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: var(--brand-500);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--brand-600);
+}
+
+::selection {
+  background: var(--brand-soft);
+}
+
+/* Scrollbar discreta */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+  background-clip: content-box;
+  border: 2px solid transparent;
+}
+
+/* ==========================================================================
+   Shell de página — usado por todas as features
+   ========================================================================== */
+
+.page {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 2rem 2rem 3.5rem;
+}
+
+.page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.75rem;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 1.65rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink-900);
+}
+
+.page-subtitle {
+  margin: 0.3rem 0 0;
+  font-size: 0.95rem;
+  color: var(--ink-500);
+}
+
+.card-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Empty state ilustrado */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 4rem 2rem;
+  text-align: center;
+  background: var(--surface);
+  border: 1.5px dashed var(--ink-200);
+  border-radius: var(--radius-lg);
+  color: var(--ink-500);
+}
+
+.empty-state .empty-icon {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: var(--brand-soft);
+  color: var(--brand-500);
+  margin-bottom: 0.5rem;
+}
+
+.empty-state .empty-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.empty-state h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ink-700);
+}
+
+.empty-state p {
+  margin: 0;
+  max-width: 42ch;
+  font-size: 0.9rem;
+}
+
+/* Skeleton de carregamento */
+@keyframes shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+
+  100% {
+    background-position: 400px 0;
+  }
+}
+
+.skeleton {
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, #eef1f6 25%, #e2e7f0 37%, #eef1f6 63%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
+/* Botões utilitários */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.2rem;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.btn-primary {
+  background: var(--brand-gradient);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(79, 110, 247, 0.32);
+}
+
+.btn-primary:hover:not(:disabled) {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--ink-500);
+  border-color: var(--ink-200);
+}
+
+.btn-ghost:hover {
+  color: var(--ink-700);
+  border-color: var(--ink-400);
+  background: var(--ink-50);
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding: 1.25rem 1rem 2.5rem;
+  }
+
+  .page-title {
+    font-size: 1.35rem;
+  }
+}

@@ -1,0 +1,72 @@
+<aside class="sidebar" [class.collapsed]="collapsed">
+  <!-- Marca -->
+  <a class="sidebar-brand" routerLink="/" (click)="onItemClick()" [title]="collapsed ? 'Biblioteca Pedro M' : null">
+    <span class="brand-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path [attr.d]="iconPaths['library']"/>
+      </svg>
+    </span>
+    <span class="brand-text">Biblioteca<small>Pedro M</small></span>
+  </a>
+
+  <!-- Navegação -->
+  <nav class="sidebar-nav" aria-label="Navegação principal">
+    <section class="nav-group" *ngFor="let group of groups; trackBy: trackByGroupLabel">
+      <h2 class="group-label">{{ group.label }}</h2>
+      <ul class="nav-list">
+        <li *ngFor="let item of group.items; trackBy: trackByLabel" class="nav-item">
+          <a
+            class="nav-link"
+            [routerLink]="item.route"
+            [title]="collapsed ? item.label : null"
+            [routerLinkActive]="['active']"
+            [routerLinkActiveOptions]="isExactRoute(item.route) ? activeOptionsExact : activeOptionsPrefix"
+            (click)="onItemClick()"
+          >
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <path [attr.d]="iconPaths[item.icon]"/>
+              </svg>
+            </span>
+            <span class="nav-label">{{ item.label }}</span>
+          </a>
+        </li>
+      </ul>
+    </section>
+  </nav>
+
+  <!-- Rodapé: usuário logado -->
+  <div class="sidebar-footer" *ngIf="isAuthenticated">
+    <div class="sidebar-user" [title]="collapsed ? userName : null">
+      <span class="user-avatar">{{ userInitial }}</span>
+      <span class="user-meta">
+        <span class="user-name">{{ userName }}</span>
+        <span class="user-email">{{ userEmail }}</span>
+      </span>
+    </div>
+    <button class="btn-logout" (click)="logout()" [title]="collapsed ? 'Sair' : null">
+      <span class="nav-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path [attr.d]="iconPaths['sair']"/>
+        </svg>
+      </span>
+      <span class="nav-label">Sair</span>
+    </button>
+  </div>
+
+  <!-- Rodapé: visitante -->
+  <div class="sidebar-footer" *ngIf="!isAuthenticated">
+    <a class="btn-cta" routerLink="/cadastro" (click)="onItemClick()" [title]="collapsed ? 'Criar conta' : null">
+      <span class="nav-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path [attr.d]="iconPaths['user-plus']"/>
+        </svg>
+      </span>
+      <span class="nav-label">Criar conta grátis</span>
+    </a>
+  </div>
+</aside>

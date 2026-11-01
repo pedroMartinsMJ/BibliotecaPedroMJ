@@ -1,0 +1,96 @@
+<main class="home-page page">
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">Catálogo de livros</h1>
+      <p class="page-subtitle">
+        <ng-container *ngIf="carregando; else countTpl">Buscando no acervo…</ng-container>
+        <ng-template #countTpl>{{ totalElementos }} livro{{ totalElementos !== 1 ? 's' : '' }} no acervo · página {{ paginaAtual + 1 }} de {{ totalPaginas || 1 }}</ng-template>
+      </p>
+    </div>
+    <span class="count-chip" *ngIf="!carregando && livros.length">
+      {{ livros.length }} nesta página
+    </span>
+  </div>
+
+  <!-- Grid -->
+  <div class="livros-grid">
+    <ng-container *ngIf="carregando; else contentTpl">
+      <div class="skeleton-card" *ngFor="let s of esqueletos; trackBy: trackByIndex">
+        <div class="skeleton skeleton-capa"></div>
+        <div class="skeleton-lines">
+          <div class="skeleton skeleton-line w-80"></div>
+          <div class="skeleton skeleton-line w-50"></div>
+        </div>
+      </div>
+    </ng-container>
+
+    <ng-template #contentTpl>
+      <ng-container *ngIf="erro; else listTpl">
+        <div class="empty-state grid-span erro">
+          <span class="empty-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 8v5M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>
+            </svg>
+          </span>
+          <h3>Não foi possível carregar o catálogo</h3>
+          <p>{{ erro }}</p>
+          <button class="btn btn-ghost" (click)="carregarLivros()">Tentar novamente</button>
+        </div>
+      </ng-container>
+
+      <ng-template #listTpl>
+        <ng-container *ngIf="livros.length; else vazioTpl">
+          <app-livro-card *ngFor="let livro of livros; trackBy: trackById" [livro]="livro"></app-livro-card>
+        </ng-container>
+      </ng-template>
+    </ng-template>
+
+    <ng-template #vazioTpl>
+      <div class="empty-state grid-span">
+        <span class="empty-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 21l-4.3-4.3M17.5 10.5a7 7 0 1 1-14 0 7 7 0 0 1 14 0z"/>
+          </svg>
+        </span>
+        <h3>Nenhum livro encontrado</h3>
+        <p>Ajuste a busca ou os filtros no topo da página para explorar outros títulos do acervo.</p>
+      </div>
+    </ng-template>
+  </div>
+
+  <!-- Paginação -->
+  <nav class="paginacao" *ngIf="totalPaginas > 1" aria-label="Paginação">
+    <button
+      class="page-btn nav-btn"
+      [disabled]="paginaAtual === 0"
+      (click)="irParaPagina(paginaAtual - 1)"
+      aria-label="Página anterior"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+
+    <ng-container *ngFor="let p of paginasVisiveis; trackBy: trackByIndex">
+      <span *ngIf="p === -1" class="page-ellipsis">…</span>
+      <button
+        *ngIf="p !== -1"
+        class="page-btn"
+        [class.current]="p === paginaAtual"
+        (click)="irParaPagina(p)"
+        [attr.aria-current]="p === paginaAtual ? 'page' : null"
+      >{{ p + 1 }}</button>
+    </ng-container>
+
+    <button
+      class="page-btn nav-btn"
+      [disabled]="paginaAtual >= totalPaginas - 1"
+      (click)="irParaPagina(paginaAtual + 1)"
+      aria-label="Próxima página"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+    </button>
+  </nav>
+</main>
