@@ -5,14 +5,26 @@ spring:
   profiles:
     active: test
 
+  # Habilita Virtual Threads (Java 21 / Project Loom)
+  threads:
+    virtual:
+      enabled: true
+
   # Configuração PostgreSQL
   datasource:
     url: jdbc:postgresql://localhost:5432/biblioteca_db
     username: ${DB_USERNAME:pedro}
     password: ${DB_PASSWORD:senha123}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+      pool-name: BibliotecaHikariPool
 
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: update
     show-sql: true
@@ -35,7 +47,7 @@ spring:
 
   web:
     resources:
-      static-locations: classpath:/static/
+      static-locations: classpath:/static/, classpath:/static/browser/
       cache:
         period: 0
 
@@ -69,6 +81,21 @@ minio:
   access-key: ${MINIO_ACCESS_KEY:minioadmin}
   secret-key: ${MINIO_SECRET_KEY:minioadmin123}
   bucket-name: ${MINIO_BUCKET_NAME:livros}
+
+# Observabilidade com Spring Boot Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,threaddump
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    enable:
+      jvm: true
+      hikaricp: true
+      process: true
 
 # ddl-auto: create-drop
 # ddl-auto: none

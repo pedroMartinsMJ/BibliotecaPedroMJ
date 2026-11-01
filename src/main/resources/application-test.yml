@@ -1,6 +1,10 @@
 # Configurações para ambiente de test
 
 spring:
+  threads:
+    virtual:
+      enabled: true
+
   datasource:
     url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL
     username: sa
@@ -8,6 +12,7 @@ spring:
     driver-class-name: org.h2.Driver
 
   jpa:
+    open-in-view: false
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
       ddl-auto: create-drop
@@ -51,3 +56,10 @@ jwt:
 app:
   encryption:
     key: "+s5G3B9/iucZjUV4HVie1BQgj8M6/2bquV82hLszU78="
+
+# Observabilidade com Actuator em Testes
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,threaddump

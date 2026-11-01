@@ -110,7 +110,7 @@ public class SecurityConfig {
                                 "/leitor/**"
                         ).permitAll()
                         .requestMatchers("/autores/**").permitAll()
-                        .requestMatchers("/css/**", "/js/**", "/images/**", "/static/**").permitAll()
+                        .requestMatchers("/browser/**", "/css/**", "/js/**", "/images/**", "/static/**").permitAll()
                         .requestMatchers("/favicon.ico", "/favicon.svg").permitAll()
                         .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
                         .requestMatchers("/error").permitAll()
@@ -129,8 +129,9 @@ public class SecurityConfig {
                         // Documentação (Swagger, se tiver)
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
 
-                        // Health check (opcional)
-                        .requestMatchers("/actuator/health").permitAll()
+                        // Diagnóstico de Performance e Actuator
+                        .requestMatchers("/api/diagnostico/**").permitAll()
+                        .requestMatchers("/actuator/**").permitAll()
 
                         // ========== ROTAS PROTEGIDAS ==========
                         // Livros - Leitura pública, modificação autenticada
