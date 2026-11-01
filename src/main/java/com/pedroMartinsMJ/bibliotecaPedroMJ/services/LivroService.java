@@ -27,20 +27,26 @@ public class LivroService {
     private final MinioService minioService;
 
     /**
-     * CRIA livro completo: salva metadados no PostgreSQL, arquivo e capa no MinIO
+     * CRIA livro completo:
+     * 1. Validações prévias
+     * 2. Upload de arquivos para o MinIO (I/O de rede EXTERNO, fora da transação de banco)
+     * 3. Persistência de metadados no PostgreSQL (transação curta)
+     * 4. Compensação: se o banco falhar, arquivos recém-enviados são limpos do MinIO
      */
-    @Transactional
     public Livro criarLivro(Livro livro, MultipartFile arquivo, MultipartFile capa) {
+        String fileKey = null;
+        String capaKey = null;
+
         try {
-            // 1. Validações
+            // 1. Validações prévias
             validarArquivo(arquivo);
             if (capa != null && !capa.isEmpty()) {
                 validarCapa(capa);
             }
             validarLivro(livro);
 
-            // 2. Upload do arquivo PDF/EPUB para MinIO
-            String fileKey = minioService.uploadArquivo(arquivo, "livros");
+            // 2. Upload do arquivo PDF/EPUB para MinIO (sem reter conexão JDBC do banco)
+            fileKey = minioService.uploadArquivo(arquivo, "livros");
             livro.setArquivoKey(fileKey);
             livro.setTipoArquivo(TipoArquivo.fromContentType(arquivo.getContentType()));
             livro.setTamanhoBytes(arquivo.getSize());
@@ -48,15 +54,15 @@ public class LivroService {
 
             // 3. Upload da capa (se fornecida)
             if (capa != null && !capa.isEmpty()) {
-                String capaKey = minioService.uploadArquivo(capa, "capas");
+                capaKey = minioService.uploadArquivo(capa, "capas");
                 livro.setCapaKey(capaKey);
                 livro.setCapaContentType(capa.getContentType());
                 livro.setCapaTamanhoBytes(capa.getSize());
                 livro.setCapaDataUpload(LocalDateTime.now());
             }
 
-            // 4. Salva no PostgreSQL
-            Livro livroSalvo = livroRepository.save(livro);
+            // 4. Salva no banco de dados (transação curta e isolada)
+            Livro livroSalvo = salvarMetadados(livro);
 
             log.info("Livro '{}' criado com sucesso! ID: {} | Autor: {} | Capa: {}",
                     livro.getTitulo(),
@@ -67,9 +73,34 @@ public class LivroService {
             return livroSalvo;
 
         } catch (Exception e) {
-            log.error("Erro ao criar livro: {}", e.getMessage());
+            log.error("Erro ao criar livro. Iniciando compensação de arquivos no MinIO: {}", e.getMessage());
+
+            // Padrão Saga / Compensação: limpa arquivos órfãos do storage em caso de falha no banco
+            if (fileKey != null) {
+                try {
+                    minioService.deletarArquivo(fileKey);
+                } catch (Exception ex) {
+                    log.warn("Falha ao compensar remoção de arquivo '{}' do MinIO: {}", fileKey, ex.getMessage());
+                }
+            }
+            if (capaKey != null) {
+                try {
+                    minioService.deletarArquivo(capaKey);
+                } catch (Exception ex) {
+                    log.warn("Falha ao compensar remoção de capa '{}' do MinIO: {}", capaKey, ex.getMessage());
+                }
+            }
+
             throw new RuntimeException("Falha ao criar livro", e);
         }
+    }
+
+    /**
+     * Persiste metadados do livro no PostgreSQL dentro de uma transação exclusiva e rápida.
+     */
+    @Transactional
+    public Livro salvarMetadados(Livro livro) {
+        return livroRepository.save(livro);
     }
 
     /**
@@ -155,9 +186,9 @@ public class LivroService {
     }
 
     /**
-     * ATUALIZA o arquivo PDF/EPUB do livro
+     * ATUALIZA o arquivo PDF/EPUB do livro.
+     * Faz upload no MinIO fora da transação do banco e persiste metadados em transação isolada.
      */
-    @Transactional
     public void atualizarArquivo(UUID livroId, MultipartFile arquivo) {
         Livro livro = buscarPorId(livroId);
 
@@ -167,26 +198,28 @@ public class LivroService {
 
         validarArquivo(arquivo);
 
-        // Atualiza o arquivo no MinIO
-        livro.setArquivoKey(minioService.atualizarArquivo(livro.getArquivoKey(), arquivo));
+        // Atualiza o arquivo no MinIO (I/O externo sem lock de banco)
+        String keyAtualizada = minioService.atualizarArquivo(livro.getArquivoKey(), arquivo);
+        livro.setArquivoKey(keyAtualizada);
         livro.setTipoArquivo(TipoArquivo.fromContentType(arquivo.getContentType()));
         livro.setTamanhoBytes(arquivo.getSize());
         livro.setDataUpload(LocalDateTime.now());
 
-        livroRepository.save(livro);
+        // Salva metadados no banco
+        salvarMetadados(livro);
         log.info("Arquivo do livro '{}' atualizado com sucesso!", livro.getTitulo());
     }
 
     /**
-     * ATUALIZA a capa do livro
+     * ATUALIZA a capa do livro.
+     * Faz upload no MinIO fora da transação do banco e persiste metadados em transação isolada.
      */
-    @Transactional
     public void atualizarCapa(UUID livroId, MultipartFile capa) {
         Livro livro = buscarPorId(livroId);
 
         validarCapa(capa);
 
-        // Se já existe capa, atualiza. Se não existe, faz upload novo
+        // Se já existe capa, atualiza no MinIO; se não existe, faz upload novo
         if (livro.temCapa()) {
             livro.setCapaKey(minioService.atualizarArquivo(livro.getCapaKey(), capa));
         } else {
@@ -198,14 +231,15 @@ public class LivroService {
         livro.setCapaTamanhoBytes(capa.getSize());
         livro.setCapaDataUpload(LocalDateTime.now());
 
-        livroRepository.save(livro);
+        salvarMetadados(livro);
         log.info("Capa do livro '{}' atualizada com sucesso!", livro.getTitulo());
     }
 
     /**
-     * REMOVE a capa do livro
+     * REMOVE a capa do livro:
+     * 1. Remove referências dos metadados no banco primeiro (transacional).
+     * 2. Remove o blob do MinIO após confirmação do banco.
      */
-    @Transactional
     public void removerCapa(UUID livroId) {
         Livro livro = buscarPorId(livroId);
 
@@ -213,40 +247,66 @@ public class LivroService {
             throw new RuntimeException("Livro não possui capa para remover");
         }
 
-        // Remove do MinIO
-        minioService.deletarArquivo(livro.getCapaKey());
+        String capaKey = livro.getCapaKey();
 
-        // Remove referências do banco
+        // Remove referências do banco de dados primeiro
         livro.setCapaKey(null);
         livro.setCapaContentType(null);
         livro.setCapaTamanhoBytes(null);
         livro.setCapaDataUpload(null);
 
-        livroRepository.save(livro);
+        salvarMetadados(livro);
+
+        // Remove do MinIO com segurança
+        try {
+            minioService.deletarArquivo(capaKey);
+        } catch (Exception e) {
+            log.warn("Erro ao deletar capa '{}' do MinIO após atualizar banco: {}", capaKey, e.getMessage());
+        }
+
         log.info("Capa do livro '{}' removida com sucesso!", livro.getTitulo());
     }
 
     /**
-     * DELETA o livro completamente (arquivo, capa e metadados)
+     * DELETA o livro completamente:
+     * 1. Deleta metadados do PostgreSQL primeiro (transacional). Se houver FK ou erro, dá rollback seguro.
+     * 2. Deleta blobs do MinIO apenas após o commit no banco de dados.
      */
-    @Transactional
     public void deletarLivro(UUID id) {
         Livro livro = buscarPorId(id);
+        String arquivoKey = livro.getArquivoKey();
+        String capaKey = livro.getCapaKey();
 
-        // 1. Deleta arquivo do MinIO
-        if (livro.temArquivo()) {
-            minioService.deletarArquivo(livro.getArquivoKey());
+        // 1. Deleta do PostgreSQL (transação atômica)
+        excluirMetadados(livro);
+
+        // 2. Com o commit no banco realizado, deleta arquivo do MinIO
+        if (arquivoKey != null && !arquivoKey.isBlank()) {
+            try {
+                minioService.deletarArquivo(arquivoKey);
+            } catch (Exception e) {
+                log.warn("Erro ao deletar arquivo '{}' do MinIO após exclusão do livro: {}", arquivoKey, e.getMessage());
+            }
         }
 
-        // 2. Deleta capa do MinIO
-        if (livro.temCapa()) {
-            minioService.deletarArquivo(livro.getCapaKey());
+        // 3. Deleta capa do MinIO
+        if (capaKey != null && !capaKey.isBlank()) {
+            try {
+                minioService.deletarArquivo(capaKey);
+            } catch (Exception e) {
+                log.warn("Erro ao deletar capa '{}' do MinIO após exclusão do livro: {}", capaKey, e.getMessage());
+            }
         }
 
-        // 3. Deleta do PostgreSQL
+        log.info("Livro '{}' deletado completamente (banco + storage)!", livro.getTitulo());
+    }
+
+    /**
+     * Exclui metadados do livro no banco de dados com transação isolada.
+     */
+    @Transactional
+    public void excluirMetadados(Livro livro) {
         livroRepository.delete(livro);
-
-        log.info("Livro '{}' deletado completamente (arquivo + capa)!", livro.getTitulo());
     }
 
     // ====== VALIDAÇÕES ======
