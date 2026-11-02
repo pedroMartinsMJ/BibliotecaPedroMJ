@@ -1,5 +1,7 @@
 package com.pedroMartinsMJ.bibliotecaPedroMJ.entities.enums;
 
+import com.pedroMartinsMJ.bibliotecaPedroMJ.tratamentoDeErros.exceptions.ArquivoInvalidoException;
+
 public enum TipoArquivo {
     PDF("application/pdf"),
     EPUB("application/epub+zip");
@@ -20,6 +22,6 @@ public enum TipoArquivo {
                 return tipo;
             }
         }
-        throw new IllegalArgumentException("Tipo de arquivo não suportado: " + contentType);
+        throw new ArquivoInvalidoException("arquivo", "Tipo de arquivo não suportado: " + contentType);
     }
 }

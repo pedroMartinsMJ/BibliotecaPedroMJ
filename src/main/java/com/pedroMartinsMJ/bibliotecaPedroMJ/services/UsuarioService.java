@@ -1,15 +1,21 @@
 package com.pedroMartinsMJ.bibliotecaPedroMJ.services;
 
+import com.pedroMartinsMJ.bibliotecaPedroMJ.entities.Identidade;
 import com.pedroMartinsMJ.bibliotecaPedroMJ.entities.Role;
 import com.pedroMartinsMJ.bibliotecaPedroMJ.entities.Usuario;
-import com.pedroMartinsMJ.bibliotecaPedroMJ.repositorys.RoleRepository;
-import com.pedroMartinsMJ.bibliotecaPedroMJ.repositorys.UsuarioRepository;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.repositories.IdentidadeRepository;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.repositories.RoleRepository;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.repositories.UsuarioRepository;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.security.HashDeEmail;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.tratamentoDeErros.exceptions.RoleNaoEncontradaException;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.tratamentoDeErros.exceptions.UsuarioNaoEncontradoException;
 import com.pedroMartinsMJ.bibliotecaPedroMJ.validators.ValidacaoUsuario;
 import lombok.AllArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -17,93 +23,141 @@ import java.util.UUID;
 @AllArgsConstructor
 public class UsuarioService {
 
+    private static final String ROLE_PADRAO = "ROLE_USER";
+
     private final UsuarioRepository usuarioRepository;
+    private final IdentidadeRepository identidadeRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final ValidacaoUsuario validacaoUsuario;
+    private final HashDeEmail hashDeEmail;
 
     @Transactional
     public Usuario salvarUsuario(Usuario usuario) {
-
-        if (usuarioRepository.existsByUsername(usuario.getUsername())) {
-            throw new RuntimeException("Nome de usuário já está em uso");
-        }
-
-        if (usuarioRepository.existsByEmail(usuario.getEmail())) {
-            throw new RuntimeException("Email já está cadastrado");
-        }
+        validacaoUsuario.validarCamposUsuario(usuario);
 
         usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
 
-        // Adiciona role padrão se não tiver nenhuma
         if (usuario.getRoles().isEmpty()) {
-            Role roleUser = roleRepository.findByName("ROLE_USER")
-                    .orElseThrow(() -> new RuntimeException("Role ROLE_USER não encontrada"));
+            Role roleUser = roleRepository.findByName(ROLE_PADRAO)
+                    .orElseThrow(() -> new RoleNaoEncontradaException(ROLE_PADRAO));
             usuario.addRole(roleUser);
         }
 
-        validacaoUsuario.validarCamposUsuario(usuarioRepository, usuario);
+        indexarEmail(usuario);
 
         return usuarioRepository.save(usuario);
     }
 
     @Transactional
     public void atualizarSenha(UUID usuarioId, String novaSenha) {
-        Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
-
+        Usuario usuario = buscarPorId(usuarioId);
         usuario.setPassword(passwordEncoder.encode(novaSenha));
-        usuarioRepository.save(usuario);
     }
 
     @Transactional
     public Usuario atualizarDados(UUID id, Usuario usuarioAtualizado) {
-        Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+        Usuario usuario = buscarPorId(id);
 
-        // Atualiza com os dados recebidos (senha não é alterada aqui)
-        usuario.setNome(usuarioAtualizado.getNome());
+        // Senha não é alterada por aqui: ela tem endpoint e fluxo próprios.
+        // Nome real também não: identidade civil só entra por confirmarIdentidade.
         usuario.setEmail(usuarioAtualizado.getEmail());
 
-        validacaoUsuario.validarAtualizacao(usuarioRepository, id, usuario);
+        validacaoUsuario.validarAtualizacao(id, usuario);
+        indexarEmail(usuario);
 
         return usuarioRepository.save(usuario);
     }
 
+    @Transactional
     public void deletarUsuario(UUID id) {
-        if (!usuarioRepository.existsById(id)) {
-            throw new RuntimeException("Usuário não encontrado");
-        }
+        Usuario usuario = buscarPorId(id);
+        usuario.setAtivo(false);
+        usuario.desativarAcervo();
+    }
 
-        usuarioRepository.deleteById(id);
+    /**
+     * Reabre a conta e devolve o acervo que estava escondido. A linha só sai do
+     * banco na limpeza manual de contas desativadas há muito tempo.
+     */
+    @Transactional
+    public void reativarUsuario(UUID id) {
+        Usuario usuario = buscarPorId(id);
+        usuario.setAtivo(true);
+        usuario.reativarAcervo();
+    }
+
+    /**
+     * Guarda a identidade civil de quem vai publicar como uma linha nova,
+     * nunca por cima da anterior: se um livro publicado hoje for parar numa
+     * autoridade, a trilha precisa mostrar o nome e o CPF que valiam naquele
+     * dia, não os que a conta usa hoje.
+     *
+     * <p>O CPF chega formatado e é armazenado só com dígitos, para que a mesma
+     * pessoa não apareça com duas versões do número.</p>
+     */
+    @Transactional
+    public Identidade confirmarIdentidade(UUID usuarioId, String nomeReal, String cpf, String motivo) {
+        Usuario usuario = buscarPorId(usuarioId);
+
+        Identidade identidade = new Identidade(
+                usuario,
+                nomeReal.trim(),
+                cpf.replaceAll("[^0-9]", ""),
+                motivo);
+
+        identidade = identidadeRepository.save(identidade);
+        usuario.setIdentidadeAtual(identidade);
+        return identidade;
     }
 
     @Transactional
     public void adicionarRole(UUID usuarioId, String roleName) {
-        Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+        Usuario usuario = buscarPorId(usuarioId);
 
         Role role = roleRepository.findByName(roleName)
-                .orElseThrow(() -> new RuntimeException("Role não encontrada"));
+                .orElseThrow(() -> new RoleNaoEncontradaException(roleName));
 
         usuario.addRole(role);
-        usuarioRepository.save(usuario);
     }
 
     public boolean verificarSenha(String senhaRaw, String senhaEncodada) {
         return passwordEncoder.matches(senhaRaw, senhaEncodada);
     }
 
+    @Transactional(readOnly = true)
     public Usuario buscarPorId(UUID id) {
         return usuarioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+                .orElseThrow(() -> new UsuarioNaoEncontradoException(id));
     }
 
+    @Transactional(readOnly = true)
     public Optional<Usuario> buscarPorUsername(String username) {
         return usuarioRepository.findByUsername(username);
     }
 
+    /**
+     * Lista administrativa: traz os livros no mesmo lote de consultas para o
+     * mapper não esbarrar em lazy fora de sessão.
+     */
+    @Transactional(readOnly = true)
+    public List<Usuario> listarTodosComLivros() {
+        return usuarioRepository.findAllComLivros();
+    }
+
+    /**
+     * Busca por e-mail feita pelo índice HMAC: a coluna cifrada não é comparável
+     * em SQL (AES-GCM usa IV aleatório).
+     */
+    @Transactional(readOnly = true)
     public Optional<Usuario> buscarPorEmail(String email) {
-        return usuarioRepository.findByEmail(email);
+        return usuarioRepository.findByEmailHash(hashDeEmail.calcular(email));
+    }
+
+    /**
+     * Mantém o índice de busca sincronizado com o e-mail em claro da entidade.
+     */
+    private void indexarEmail(Usuario usuario) {
+        usuario.setEmailHash(hashDeEmail.calcular(usuario.getEmail()));
     }
 }

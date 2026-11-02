@@ -1,57 +1,49 @@
 package com.pedroMartinsMJ.bibliotecaPedroMJ.validators;
 
 import com.pedroMartinsMJ.bibliotecaPedroMJ.entities.Usuario;
-import com.pedroMartinsMJ.bibliotecaPedroMJ.repositorys.UsuarioRepository;
-import com.pedroMartinsMJ.bibliotecaPedroMJ.tratamentoDeErros.exceptions.ValidationExceptionDeUsuario;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.repositories.UsuarioRepository;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.security.HashDeEmail;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.tratamentoDeErros.exceptions.EmailEmUsoException;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.tratamentoDeErros.exceptions.UsernameEmUsoException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Regras de unicidade de usuário. A comparação de e-mail é feita pelo índice
+ * HMAC (emailHash), nunca pela coluna cifrada.
+ */
 @Component
+@RequiredArgsConstructor
 public class ValidacaoUsuario {
 
-    public void validarCamposUsuario(UsuarioRepository repository, Usuario usuario) {
-        Map<String, String> erros = new HashMap<>();
+    private final UsuarioRepository usuarioRepository;
+    private final HashDeEmail hashDeEmail;
 
-        // Validar username duplicado
-        if (repository.existsByUsername(usuario.getUsername())) {
-            erros.put("username", "Username já cadastrado no sistema");
+    public void validarCamposUsuario(Usuario usuario) {
+        if (usuarioRepository.existsByUsername(usuario.getUsername())) {
+            throw new UsernameEmUsoException();
         }
-
-        // Validar email duplicado
-        if (repository.existsByEmail(usuario.getEmail())) {
-            erros.put("email", "Email já está em uso");
-        }
-
-        // Validar nome duplicado (se necessário)
-        if (repository.existsByNome(usuario.getNome())) {
-            erros.put("nome", "Nome já cadastrado");
-        }
-
-        if (!erros.isEmpty()) {
-            throw new ValidationExceptionDeUsuario(erros);
-        }
+        validarEmailUnico(usuario.getEmail(), null);
     }
 
-    public void validarAtualizacao(UsuarioRepository repository, UUID id, Usuario usuario) {
-        Map<String, String> erros = new HashMap<>();
-
-        // Validar username duplicado (exceto o próprio usuário)
+    public void validarAtualizacao(UUID id, Usuario usuario) {
         if (usuario.getUsername() != null &&
-                repository.existsByUsernameAndIdNot(usuario.getUsername(), id)) {
-            erros.put("username", "Username já cadastrado por outro usuário");
+                usuarioRepository.existsByUsernameAndIdNot(usuario.getUsername(), id)) {
+            throw new UsernameEmUsoException();
         }
+        validarEmailUnico(usuario.getEmail(), id);
+    }
 
-        // Validar email duplicado (exceto o próprio usuário)
-        if (usuario.getEmail() != null &&
-                repository.existsByEmailAndIdNot(usuario.getEmail(), id)) {
-            erros.put("email", "Email já está em uso por outro usuário");
-        }
+    private void validarEmailUnico(String email, UUID idExceto) {
+        String indice = hashDeEmail.calcular(email);
+        boolean emUso = idExceto == null
+                ? usuarioRepository.existsByEmailHash(indice)
+                : usuarioRepository.existsByEmailHashAndIdNot(indice, idExceto);
 
-        if (!erros.isEmpty()) {
-            throw new ValidationExceptionDeUsuario(erros);
+        if (emUso) {
+            throw new EmailEmUsoException();
         }
     }
 }

@@ -1,7 +1,9 @@
 package com.pedroMartinsMJ.bibliotecaPedroMJ.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -9,7 +11,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "roles")
-@Data
+@Getter
+@Setter
 public class Role {
 
     @Id
@@ -22,20 +25,28 @@ public class Role {
     @Column(length = 200)
     private String descricao;
 
+    /**
+     * Lado inverso do ManyToMany: mantém-se fora do JSON para não fechar ciclo
+     * com Usuario.roles.
+     */
+    @JsonIgnore
     @ManyToMany(mappedBy = "roles")
     private Set<Usuario> usuarios = new HashSet<>();
 
-    // Constructors
-    public Role() {}
+    public Role() {
+    }
 
     public Role(String name) {
         this.name = name;
     }
 
-    public void setUsuarios(Set<Usuario> usuarios) {
-        this.usuarios = usuarios;
+    public void addUsuario(Usuario usuario) {
+        usuarios.add(usuario);
+        usuario.addRole(this);
     }
-    public void setUsuarios(Usuario usuario){
-        this.usuarios.add(usuario);
+
+    public void removeUsuario(Usuario usuario) {
+        usuarios.remove(usuario);
+        usuario.removeRole(this);
     }
 }

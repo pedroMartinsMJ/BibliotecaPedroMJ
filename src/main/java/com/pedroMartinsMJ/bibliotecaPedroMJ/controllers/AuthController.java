@@ -6,6 +6,7 @@ import com.pedroMartinsMJ.bibliotecaPedroMJ.controllers.DTOs.RegisterRequest;
 import com.pedroMartinsMJ.bibliotecaPedroMJ.entities.Usuario;
 import com.pedroMartinsMJ.bibliotecaPedroMJ.segurityConfig.JWT.JwtService;
 import com.pedroMartinsMJ.bibliotecaPedroMJ.services.UsuarioService;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.tratamentoDeErros.exceptions.UsuarioNaoEncontradoException;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -48,7 +49,7 @@ public class AuthController {
     }
 
     /**
-     * Login com email e senha.
+     * Login com e-mail ou username, mais senha.
      * Retorna um JWT válido por 1 hora.
      */
     @PostMapping("/login")
@@ -65,27 +66,28 @@ public class AuthController {
         String token = jwtService.generateToken(authentication);
 
         Usuario usuario = usuarioService.buscarPorUsername(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado após autenticação"));
+                .orElseThrow(UsuarioNaoEncontradoException::new);
 
         return ResponseEntity.ok(new LoginResponse(
                 token,
                 usuario.getUsername(),
-                usuario.getNome(),
+                usuario.nomeRealVigente(),
                 usuario.getEmail(),
                 roles
         ));
     }
 
     /**
-     * Cadastro com email e senha.
-     * Cria um novo usuário com role ROLE_USER padrão.
+     * Cadastro público: username escolhido + e-mail + senha. O nome real não é
+     * pedido aqui — só quando a pessoa for publicar, e então vira uma linha do
+     * histórico de identidades. O e-mail nunca vira username: ele é cifrado na
+     * coluna e só aparece em claro para o próprio dono no login.
      */
     @PostMapping("/register")
     public ResponseEntity<Void> register(@Valid @RequestBody RegisterRequest request) {
         Usuario usuario = new Usuario(
-                request.email(), // username = email
+                request.username(),
                 request.senha(),
-                request.nome(),
                 request.email()
         );
 

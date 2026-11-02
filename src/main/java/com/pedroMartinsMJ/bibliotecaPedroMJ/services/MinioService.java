@@ -1,7 +1,13 @@
 package com.pedroMartinsMJ.bibliotecaPedroMJ.services;
 
-import io.minio.*;
-import io.minio.errors.*;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.tratamentoDeErros.exceptions.FalhaDeArmazenamentoException;
+import io.minio.BucketExistsArgs;
+import io.minio.GetPresignedObjectUrlArgs;
+import io.minio.MakeBucketArgs;
+import io.minio.MinioClient;
+import io.minio.PutObjectArgs;
+import io.minio.RemoveObjectArgs;
+import io.minio.GetObjectArgs;
 import io.minio.http.Method;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,23 +15,34 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
+import java.time.LocalDate;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class MinioService {
 
+    private static final String SEM_EXTENSAO = "";
+
     private final MinioClient minioClient;
+    private final AtomicBoolean bucketConferido = new AtomicBoolean(false);
 
     @Value("${minio.bucket-name}")
     private String bucketName;
 
+    @Value("${minio.url-expiracao-minutos:15}")
+    private int expiracaoMinutos;
+
+    /**
+     * Cria o bucket se ele ainda não existe. Chamado sob demanda antes do primeiro
+     * upload, e não na inicialização da aplicação: o {@code @SpringBootTest} sobe o
+     * {@link MinioClient} real, e uma checagem de rede no boot faria os testes (e
+     * qualquer subida com o MinIO em manutenção) falharem.
+     */
     public void inicializarBucket() {
         try {
             boolean exists = minioClient.bucketExists(
@@ -43,23 +60,24 @@ public class MinioService {
                 log.info("Bucket '{}' criado com sucesso!", bucketName);
             }
         } catch (Exception e) {
-            log.error("Erro ao inicializar bucket: {}", e.getMessage());
-            throw new RuntimeException("Falha ao inicializar MinIO", e);
+            throw new FalhaDeArmazenamentoException("Falha ao preparar o bucket '" + bucketName + "'", e);
         }
     }
 
-    public String uploadArquivo(MultipartFile file, String prefixo) {
+    /**
+     * Envia o arquivo com content type já conferido pelo conteúdo (não pelo que o
+     * cliente declarou), o que evita servir script disfarçado de imagem.
+     */
+    public String uploadArquivo(MultipartFile file, String prefixo, String contentType) {
+        garantirBucket();
+        String fileName = gerarNomeArquivo(file.getOriginalFilename(), prefixo, contentType);
         try {
-            // Gera nome único para o arquivo
-            String fileName = gerarNomeArquivo(file.getOriginalFilename(), prefixo);
-
-            // Faz o upload
             minioClient.putObject(
                     PutObjectArgs.builder()
                             .bucket(bucketName)
                             .object(fileName)
                             .stream(file.getInputStream(), file.getSize(), -1)
-                            .contentType(file.getContentType())
+                            .contentType(contentType)
                             .build()
             );
 
@@ -67,8 +85,7 @@ public class MinioService {
             return fileName;
 
         } catch (Exception e) {
-            log.error("Erro ao fazer upload: {}", e.getMessage());
-            throw new RuntimeException("Falha ao enviar arquivo para MinIO", e);
+            throw new FalhaDeArmazenamentoException("Falha ao enviar arquivo para o storage", e);
         }
     }
 
@@ -81,8 +98,7 @@ public class MinioService {
                             .build()
             );
         } catch (Exception e) {
-            log.error("Erro ao baixar arquivo '{}': {}", fileKey, e.getMessage());
-            throw new RuntimeException("Falha ao baixar arquivo do MinIO", e);
+            throw new FalhaDeArmazenamentoException("Falha ao baixar arquivo do storage", e);
         }
     }
 
@@ -96,37 +112,7 @@ public class MinioService {
             );
             log.info("Arquivo '{}' deletado do MinIO!", fileKey);
         } catch (Exception e) {
-            log.error("Erro ao deletar arquivo '{}': {}", fileKey, e.getMessage());
-            throw new RuntimeException("Falha ao deletar arquivo do MinIO", e);
-        }
-    }
-
-    public String atualizarArquivo(String fileKey, MultipartFile file) {
-        try {
-            // Remove o arquivo antigo
-            minioClient.removeObject(
-                    RemoveObjectArgs.builder()
-                            .bucket(bucketName)
-                            .object(fileKey)
-                            .build()
-            );
-
-            // Faz upload do novo arquivo mantendo o mesmo nome
-            minioClient.putObject(
-                    PutObjectArgs.builder()
-                            .bucket(bucketName)
-                            .object(fileKey)
-                            .stream(file.getInputStream(), file.getSize(), -1)
-                            .contentType(file.getContentType())
-                            .build()
-            );
-
-            log.info("Arquivo '{}' atualizado no MinIO com sucesso!", fileKey);
-            return fileKey;
-
-        } catch (Exception e) {
-            log.error("Erro ao atualizar arquivo '{}': {}", fileKey, e.getMessage());
-            throw new RuntimeException("Falha ao atualizar arquivo no MinIO", e);
+            throw new FalhaDeArmazenamentoException("Falha ao deletar arquivo do storage", e);
         }
     }
 
@@ -137,17 +123,45 @@ public class MinioService {
                             .method(Method.GET)
                             .bucket(bucketName)
                             .object(fileKey)
-                            .expiry(7, TimeUnit.DAYS)
+                            .expiry(expiracaoMinutos, TimeUnit.MINUTES)
                             .build()
             );
         } catch (Exception e) {
-            log.error("Erro ao gerar URL de download: {}", e.getMessage());
-            throw new RuntimeException("Falha ao gerar URL", e);
+            throw new FalhaDeArmazenamentoException("Falha ao gerar link de download", e);
         }
     }
 
-    private String gerarNomeArquivo(String nomeOriginal, String prefixo) {
-        String extensao = nomeOriginal.substring(nomeOriginal.lastIndexOf("."));
-        return prefixo + "/" + UUID.randomUUID() + extensao;
+    private void garantirBucket() {
+        if (bucketConferido.compareAndSet(false, true)) {
+            try {
+                inicializarBucket();
+            } catch (RuntimeException e) {
+                // Sem o latch liberado a próxima tentativa tenta de novo, em vez de
+                // ficar com o storage quebrado até reiniciar a aplicação.
+                bucketConferido.set(false);
+                throw e;
+            }
+        }
+    }
+
+    /**
+     * Nome de objeto independente do que o cliente enviou: originalFilename pode
+     * vir nulo, vazio ou com caminho de outro sistema, e não é usado para nada
+     * além da extensão.
+     */
+    private String gerarNomeArquivo(String nomeOriginal, String prefixo, String contentType) {
+        return prefixo + "/" + LocalDate.now() + "/" + UUID.randomUUID() + extensao(nomeOriginal, contentType);
+    }
+
+    private String extensao(String nomeOriginal, String contentType) {
+        String porConteudo = switch (contentType) {
+            case "application/pdf" -> ".pdf";
+            case "application/epub+zip" -> ".epub";
+            case "image/jpeg" -> ".jpg";
+            case "image/png" -> ".png";
+            case "image/webp" -> ".webp";
+            default -> SEM_EXTENSAO;
+        };
+        return porConteudo;
     }
 }

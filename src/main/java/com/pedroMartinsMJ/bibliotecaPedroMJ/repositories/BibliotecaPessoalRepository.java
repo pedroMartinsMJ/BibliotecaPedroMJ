@@ -1,4 +1,4 @@
-package com.pedroMartinsMJ.bibliotecaPedroMJ.repositorys;
+package com.pedroMartinsMJ.bibliotecaPedroMJ.repositories;
 
 import com.pedroMartinsMJ.bibliotecaPedroMJ.entities.BibliotecaPessoal;
 import org.springframework.data.jpa.repository.JpaRepository;

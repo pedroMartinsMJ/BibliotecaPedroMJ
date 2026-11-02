@@ -13,10 +13,9 @@ public record UsuarioDTO_CREATE (
         @Size(min = 6, message = "Senha deve ter no mínimo 6 caracteres")
         String password,
 
-        @NotBlank(message = "Nome é obrigatório")
-        @Size(min = 2, max = 100, message = "Nome deve ter entre 2 e 100 caracteres")
-        String nome,
-
+        // Nome real e CPF não passam por aqui: são uma declaração própria, feita
+        // no endpoint /usuario/identidade, e cada versão vira uma linha nova no
+        // histórico. Admin nenhum reescreve a identidade de ninguém.
         @NotBlank(message = "Email é obrigatório")
         @Email(message = "Email inválido")
         @Size(max = 100, message = "Email deve ter no máximo 100 caracteres")

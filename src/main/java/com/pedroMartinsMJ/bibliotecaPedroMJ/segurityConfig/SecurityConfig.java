@@ -130,7 +130,7 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
 
                         // Diagnóstico de Performance e Actuator
-                        .requestMatchers("/api/diagnostico/**").permitAll()
+                        .requestMatchers("/api/diagnostico/**").hasRole("ADMIN")
                         .requestMatchers("/actuator/**").permitAll()
 
                         // ========== ROTAS PROTEGIDAS ==========

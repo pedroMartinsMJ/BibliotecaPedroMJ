@@ -1,9 +1,11 @@
 package com.pedroMartinsMJ.bibliotecaPedroMJ.tratamentoDeErros;
 
-import com.pedroMartinsMJ.bibliotecaPedroMJ.tratamentoDeErros.exceptions.ValidationExceptionDeUsuario;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.tratamentoDeErros.exceptions.ExcecaoDeNegocio;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -16,33 +18,30 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Handler global de exceções da aplicação
- *
- * MELHORIAS APLICADAS:
- * ✅ Corrigido encoding UTF-8
- * ✅ ErrorResponse como record (mais moderno)
- * ✅ Status code incluído na resposta
- * ✅ Detecção de constraints mais robusta
- * ✅ Handler genérico adicionado
- * ✅ Logs de erro para debug
+ * Handler global de exceções da aplicação.
  */
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // ==================== VALIDAÇÕES CUSTOMIZADAS ====================
+    // ==================== EXCEÇÕES DE DOMÍNIO ====================
 
-    @ExceptionHandler(ValidationExceptionDeUsuario.class)
-    public ResponseEntity<ErrorResponse> handleValidationException(
-            ValidationExceptionDeUsuario ex) {
+    @ExceptionHandler(ExcecaoDeNegocio.class)
+    public ResponseEntity<ErrorResponse> handleExcecaoDeNegocio(ExcecaoDeNegocio ex) {
+        HttpStatus status = ex.getStatus();
 
         ErrorResponse response = new ErrorResponse(
-                HttpStatus.BAD_REQUEST.value(),
-                "Erro de validação",
-                ex.getErrors(),
+                status.value(),
+                status.is4xxClientError() ? "Requisição inválida" : "Erro interno",
+                ex.getErros(),
                 LocalDateTime.now()
         );
 
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        if (status.is5xxServerError()) {
+            log.error("Erro de negócio interno: {}", ex.getMessage(), ex);
+        }
+
+        return ResponseEntity.status(status).body(response);
     }
 
     // ==================== INTEGRIDADE DE DADOS ====================
@@ -55,9 +54,7 @@ public class GlobalExceptionHandler {
         String message = ex.getMostSpecificCause().getMessage().toLowerCase();
 
         // Detecção de constraints de unicidade
-        if (message.contains("uk_usuario_email") ||
-                message.contains("email") ||
-                message.contains("usuarios.email")) {
+        if (message.contains("email_hash") || message.contains("usuarios.email")) {
             errors.put("email", "Email já cadastrado no sistema");
 
         } else if (message.contains("uk_usuario_username") ||
@@ -119,14 +116,34 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
     }
 
+    // ==================== AUTORIZAÇÃO ====================
+
+    /**
+     * Sem este handler o AccessDeniedException caía no capturador genérico e
+     * virava 500: o cliente não descobria se faltava permissão, e o filtro de
+     * segurança do Spring nunca chega a traduzi-lo porque o advice respondeu
+     * primeiro.
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex) {
+        Map<String, String> errors = new HashMap<>();
+        errors.put("erro", "Você não tem permissão para esta operação");
+
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.FORBIDDEN.value(),
+                "Acesso negado",
+                errors,
+                LocalDateTime.now()
+        );
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+    }
+
     // ==================== EXCEÇÕES GENÉRICAS ====================
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
-
-        // Log do erro para debug (importante!)
-        System.err.println("ERRO NÃO TRATADO: " + ex.getClass().getName());
-        ex.printStackTrace();
+        log.error("Erro não tratado: {}", ex.getClass().getName(), ex);
 
         Map<String, String> errors = new HashMap<>();
         errors.put("erro", "Erro interno do servidor. Contate o suporte.");

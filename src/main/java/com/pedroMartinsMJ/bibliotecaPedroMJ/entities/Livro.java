@@ -1,11 +1,11 @@
 package com.pedroMartinsMJ.bibliotecaPedroMJ.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.pedroMartinsMJ.bibliotecaPedroMJ.entities.enums.TipoArquivo;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -13,11 +13,15 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * Livro do acervo. A formatação de tamanho e a projeção para a API não vivem
+ * aqui: {@link com.pedroMartinsMJ.bibliotecaPedroMJ.controllers.DTOs.LivroDTO_RESPONSE}
+ * é quem decide o que o cliente vê.
+ */
 @Entity
 @Table(name = "livros")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter
+@Setter
 public class Livro {
 
     @Id
@@ -44,17 +48,28 @@ public class Livro {
     private String idioma;
 
     // ====== RELACIONAMENTO COM AUTOR (Usuario) ======
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "autor_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "autor_id")
+    @JsonIgnore
     private Usuario autor;
+
+    // Fotografia da identidade civil que valia quando este livro foi publicado.
+    // Aponta para a linha imutável de usuario_identidades: nem uma correção de
+    // nome feita depois, nem um vazamento do CPF vigente, altera o histórico de
+    // uma publicação anterior. Sem cascade: a publicação nunca cria nem apaga
+    // linha de identidade, só referencia uma que já existe.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "identidade_id")
+    @JsonIgnore
+    private Identidade identidadePublicador;
 
     // ====== INTEGRAÇÃO COM MinIO - ARQUIVO DO LIVRO (PDF/EPUB) ======
     @Column(name = "arquivo_key", unique = true)
-    private String arquivoKey;  // Nome único no MinIO
+    private String arquivoKey;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "tipo_arquivo")
-    private TipoArquivo tipoArquivo;  // PDF, EPUB
+    private TipoArquivo tipoArquivo;
 
     @Column(name = "tamanho_bytes")
     private Long tamanhoBytes;
@@ -64,10 +79,12 @@ public class Livro {
 
     // ====== CAPA DO LIVRO (IMAGEM) ======
     @Column(name = "capa_key", unique = true)
-    private String capaKey;  // Nome único da capa no MinIO
+    private String capaKey;
 
+    // Servido como Content-Type no download: vem da assinatura dos bytes, nunca
+    // do header do cliente, senão uma imagem maliciosa roda na origem do site.
     @Column(name = "capa_content_type", length = 50)
-    private String capaContentType;  // image/jpeg, image/png, image/webp
+    private String capaContentType;
 
     @Column(name = "capa_tamanho_bytes")
     private Long capaTamanhoBytes;
@@ -77,60 +94,30 @@ public class Livro {
 
     // ====== RELACIONAMENTO COM BIBLIOTECA PESSOAL ======
     @OneToMany(mappedBy = "livro", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference
+    @JsonManagedReference("livro-biblioteca")
     private Set<BibliotecaPessoal> bibliotecasPessoais = new HashSet<>();
 
-    @Column(name = "data_cadastro")
+    @Column(name = "data_cadastro", nullable = false, updatable = false)
     private LocalDateTime dataCadastro;
+
+    // Livro invisível em vez de apagado: a conta pode voltar, e o arquivo continua
+    // servindo de trilha para quem publicou. A linha só sai do banco na limpeza
+    // manual de contas antigas.
+    @Column(nullable = false)
+    private boolean ativo = true;
 
     @PrePersist
     protected void onCreate() {
-        dataCadastro = LocalDateTime.now();
+        if (dataCadastro == null) {
+            dataCadastro = LocalDateTime.now();
+        }
     }
 
-    // ====== MÉTODOS AUXILIARES ======
-
-    /**
-     * Verifica se o livro possui arquivo disponível
-     */
     public boolean temArquivo() {
-        return arquivoKey != null && !arquivoKey.isEmpty();
+        return arquivoKey != null && !arquivoKey.isBlank();
     }
 
-    /**
-     * Verifica se o livro possui capa disponível
-     */
     public boolean temCapa() {
-        return capaKey != null && !capaKey.isEmpty();
-    }
-
-    /**
-     * Retorna tamanho do arquivo formatado (MB/KB)
-     */
-    public String getTamanhoFormatado() {
-        if (tamanhoBytes == null) return "N/A";
-
-        double kb = tamanhoBytes / 1024.0;
-        double mb = kb / 1024.0;
-
-        if (mb >= 1) {
-            return String.format("%.2f MB", mb);
-        }
-        return String.format("%.2f KB", kb);
-    }
-
-    /**
-     * Retorna tamanho da capa formatado (MB/KB)
-     */
-    public String getCapaTamanhoFormatado() {
-        if (capaTamanhoBytes == null) return "N/A";
-
-        double kb = capaTamanhoBytes / 1024.0;
-        double mb = kb / 1024.0;
-
-        if (mb >= 1) {
-            return String.format("%.2f MB", mb);
-        }
-        return String.format("%.2f KB", kb);
+        return capaKey != null && !capaKey.isBlank();
     }
 }
