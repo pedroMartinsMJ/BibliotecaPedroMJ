@@ -11,7 +11,7 @@ echo "1 - Development Angular + Spring (Test)"
 echo "   Angular dev + Spring Boot com perfil 'test' (H2)"
 echo
 echo "2 - Production Complete"
-echo "   Angular prod + Spring Boot com perfil 'prod' (PG)"
+echo "   Angular prod + Spring Boot com perfil 'prodsim' (PG)"
 echo
 echo "3 - Tests Only (Spring only)"
 echo "   Spring Boot com perfil 'test' (H2 + console H2)"
@@ -60,9 +60,9 @@ elif [ "$opcao" = "2" ]; then
         exit 1
     fi
     echo
-    echo "2️⃣ Iniciando Spring Boot perfil 'prod'..."
+    echo "2️⃣ Iniciando Spring Boot perfil 'prodsim'..."
     cd ..
-    ./mvnw spring-boot:run -Dspring.profiles.active=prod
+    ./mvnw spring-boot:run -Dspring.profiles.active=prodsim
     if [ $? -ne 0 ]; then
         echo "ERRO ao iniciar Spring!"
         read -p "Press Enter to continue..."

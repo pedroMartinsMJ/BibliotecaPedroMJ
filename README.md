@@ -108,7 +108,7 @@ un-all.bat | Menu interativo completo (Development/Test, Production, Tests só, 
 
 `
 1 - Development Angular + Spring (Test)     -> Compila Angular dev + roda Spring com perfil 'test' (H2)
-2 - Production Complete                     -> Compila Angular prod + roda Spring com perfil 'prod' (PostgreSQL)
+2 - Production Complete                     -> Compila Angular prod + roda Spring com perfil 'prodsim' (PostgreSQL local)
 3 - Tests Only (Spring only)                -> Só roda Spring com perfil 'test' (H2 + console H2)
 4 - Compile Angular Only                    -> Só compila Angular (dev ou prod)
 5 - Sair

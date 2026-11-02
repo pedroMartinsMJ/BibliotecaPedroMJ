@@ -48,3 +48,6 @@ node_modules/
 package-lock.json
 frontend/.chromium-profile/
 frontend/coverage/
+
+# Notas locais de sessao (contexto do agente, nao vai para o github)
+*.local.md

@@ -72,7 +72,8 @@
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <scope>runtime</scope>
+            <!-- compile: H2ConsoleTestConfig registra JakartaWebServlet em código -->
+            <scope>compile</scope>
         </dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

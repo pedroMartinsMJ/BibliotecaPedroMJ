@@ -35,6 +35,8 @@ spring:
 
   servlet:
     multipart:
+      # precisa acompanhar app.upload.limite-arquivo-mb: o container corta a
+      # requisição antes de chegar ao InspecionadorDeArquivo
       max-file-size: 50MB
       max-request-size: 50MB
 
@@ -74,6 +76,9 @@ jwt:
 app:
   encryption:
     key: ${APP_ENCRYPTION_KEY:}
+  upload:
+    limite-arquivo-mb: 50
+    limite-capa-mb: 5
 
 # Configuração MinIO (Custom)
 minio:
@@ -81,6 +86,8 @@ minio:
   access-key: ${MINIO_ACCESS_KEY:minioadmin}
   secret-key: ${MINIO_SECRET_KEY:minioadmin123}
   bucket-name: ${MINIO_BUCKET_NAME:livros}
+  # links pré-assinados: tempo curto porque a URL exposta vira credencial de acesso
+  url-expiracao-minutos: 15
 
 # Observabilidade com Spring Boot Actuator
 management:

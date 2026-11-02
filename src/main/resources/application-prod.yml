@@ -1,0 +1,48 @@
+# Produção real. Nada aqui tem valor de exemplo: se faltar variável de ambiente
+# a aplicação não sobe, em vez de cair numa credencial padrão do repositório.
+#
+#   SPRING_PROFILES_ACTIVE=prod \
+#   DB_HOST=... DB_NAME=... DB_USERNAME=... DB_PASSWORD=... \
+#   APP_ENCRYPTION_KEY=$(openssl rand -base64 32) \
+#   MINIO_ENDPOINT=... MINIO_ACCESS_KEY=... MINIO_SECRET_KEY=...
+#
+# A APP_ENCRYPTION_KEY é a única coisa que impede um dump do banco de virar dados
+# legíveis. Ela não pode estar neste arquivo nem no histórico do git: quem perde
+# a chave perde o nome e o e-mail dos usuários, então guarde-a em cofre de
+# segredos e faça backup antes de rotacionar.
+
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT:5432}/${DB_NAME}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      # O schema de produção é controlado por migração, nunca pelo Hibernate.
+      ddl-auto: validate
+    show-sql: false
+
+  sql:
+    init:
+      mode: never
+
+logging:
+  level:
+    com.pedroMartinsMJ.bibliotecaPedroMJ: INFO
+
+minio:
+  # O application.yaml traz defaults de desenvolvimento (localhost e
+  # minioadmin/minioadmin123). Em produção estes valores vêm sempre do ambiente;
+  # sem eles a aplicação não sobe, em vez de conectar no MinIO de exemplo.
+  endpoint: ${MINIO_ENDPOINT}
+  access-key: ${MINIO_ACCESS_KEY}
+  secret-key: ${MINIO_SECRET_KEY}
+  bucket-name: ${MINIO_BUCKET_NAME}
+
+app:
+  encryption:
+    key: ${APP_ENCRYPTION_KEY}
+  # Sem dados de exemplo em banco real.
+  seed-demo: false

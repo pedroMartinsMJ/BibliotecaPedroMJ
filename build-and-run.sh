@@ -31,8 +31,8 @@ if [ -z "$GOOGLE_CLIENT_ID" ] || [ -z "$GOOGLE_CLIENT_SECRET" ]; then
 fi
 
 if [ -z "$SPRING_PROFILES_ACTIVE" ]; then
-  export SPRING_PROFILES_ACTIVE=prod
-  echo "   SPRING_PROFILES_ACTIVE não definido, usando padrão: prod"
+  export SPRING_PROFILES_ACTIVE=prodsim
+  echo "   SPRING_PROFILES_ACTIVE não definido, usando padrão: prodsim"
 fi
 
 echo "   SPRING_PROFILES_ACTIVE=$SPRING_PROFILES_ACTIVE"

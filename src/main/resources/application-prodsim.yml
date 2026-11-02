@@ -1,0 +1,39 @@
+# Simulação local de produção: Postgres e MinIO do docker-compose.yml.
+#
+#   SPRING_PROFILES_ACTIVE=prodsim ./mvnw spring-boot:run
+#
+# Serve para testar o comportamento de produção (banco que persiste, schema
+# compartilhado, sem H2) sem precisar de credenciais reais. A chave de
+# cifragem abaixo é de exemplo e só existe aqui, neste profile que nunca vai
+# para um servidor de verdade. Para publicar de fato, use o profile `prod`
+# e injete APP_ENCRYPTION_KEY gerada com: openssl rand -base64 32
+
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:biblioteca_prod}
+    username: ${DB_USERNAME:pedro}
+    password: ${DB_PASSWORD:senha123}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      # Schema criado e ajustado pelo Hibernate, porque este banco é descartável.
+      ddl-auto: update
+    show-sql: false
+
+  sql:
+    init:
+      mode: never
+
+logging:
+  level:
+    com.pedroMartinsMJ.bibliotecaPedroMJ: INFO
+
+minio:
+  bucket-name: ${MINIO_BUCKET_NAME:livros-prod}
+
+app:
+  encryption:
+    key: ${APP_ENCRYPTION_KEY:ASsnlRMvrpbXDxhsKJVAlZFI1lPsYZ2SoMAbdBAGM/g=}
+  # Popula roles e um usuário de exemplo no primeiro boot desta simulação.
+  seed-demo: ${APP_SEED_DEMO:true}
