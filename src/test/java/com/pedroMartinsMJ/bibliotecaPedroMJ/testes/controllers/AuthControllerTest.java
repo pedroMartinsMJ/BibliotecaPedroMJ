@@ -15,11 +15,18 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Cadastro e login reais: a conta nasce com username público e e-mail privado,
+ * sem nome civil. O login aceita os dois identificadores.
+ */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class AuthControllerTest {
+
+    private static final String EMAIL = "pedro.auth.teste@email.com";
+    private static final String USERNAME = "pedro.teste";
 
     @Autowired
     private MockMvc mockMvc;
@@ -29,7 +36,7 @@ class AuthControllerTest {
     void deveRegistrarNovoUsuarioComSucesso() throws Exception {
         String json = """
             {
-                "nome": "Pedro Teste",
+                "username": "pedro.teste",
                 "email": "pedro.auth.teste@email.com",
                 "senha": "senhaSegura123"
             }
@@ -56,12 +63,29 @@ class AuthControllerTest {
                         .content(json))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").isString())
-                .andExpect(jsonPath("$.email").value("pedro.auth.teste@email.com"))
-                .andExpect(jsonPath("$.nome").value("Pedro Teste"));
+                .andExpect(jsonPath("$.username").value(USERNAME))
+                .andExpect(jsonPath("$.email").value(EMAIL));
     }
 
     @Test
     @Order(3)
+    void deveAceitarLoginComOProprioUsername() throws Exception {
+        String json = """
+            {
+                "email": "pedro.teste",
+                "senha": "senhaSegura123"
+            }
+            """;
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value(USERNAME));
+    }
+
+    @Test
+    @Order(4)
     void deveFalharLoginComSenhaIncorreta() throws Exception {
         String json = """
             {
@@ -77,11 +101,11 @@ class AuthControllerTest {
     }
 
     @Test
-    @Order(4)
+    @Order(5)
     void deveRejeitarRegistroComDadosInvalidos() throws Exception {
         String json = """
             {
-                "nome": "",
+                "username": "a b!",
                 "email": "email-invalido",
                 "senha": "12"
             }

@@ -1,15 +1,23 @@
 package com.pedroMartinsMJ.bibliotecaPedroMJ.testes.services;
 
+import com.pedroMartinsMJ.bibliotecaPedroMJ.entities.Identidade;
 import com.pedroMartinsMJ.bibliotecaPedroMJ.entities.Livro;
 import com.pedroMartinsMJ.bibliotecaPedroMJ.entities.Usuario;
 import com.pedroMartinsMJ.bibliotecaPedroMJ.entities.enums.TipoArquivo;
-import com.pedroMartinsMJ.bibliotecaPedroMJ.repositorys.LivroRepository;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.repositories.LivroRepository;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.services.EscritaTransacionalDeLivro;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.services.InspecionadorDeArquivo;
 import com.pedroMartinsMJ.bibliotecaPedroMJ.services.LivroService;
 import com.pedroMartinsMJ.bibliotecaPedroMJ.services.MinioService;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.tratamentoDeErros.exceptions.ArquivoIndisponivelException;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.tratamentoDeErros.exceptions.ArquivoInvalidoException;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.tratamentoDeErros.exceptions.LivroNaoEncontradoException;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.validators.ValidacaoDeLivro;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -18,195 +26,244 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class LivroServiceTest {
+
+    private static final String KEY_ARQUIVO = "livros/2026-11-01/abc.pdf";
+    private static final String KEY_CAPA = "capas/2026-11-01/def.jpg";
+
     @Mock private LivroRepository livroRepository;
     @Mock private MinioService minioService;
+    @Mock private InspecionadorDeArquivo inspecionador;
+    @Mock private EscritaTransacionalDeLivro escrita;
+    @Mock private ValidacaoDeLivro validacaoDeLivro;
     @InjectMocks private LivroService livroService;
+
     private Livro livroValido;
-    private Usuario autor;
 
     @BeforeEach
     void setUp() {
-        autor = new Usuario();
+        Usuario autor = new Usuario();
         autor.setId(UUID.randomUUID());
-        autor.setNome("Autor Teste");
         autor.setUsername("autor_teste");
+        autor.setIdentidadeAtual(new Identidade(autor, "Autor Teste", "52998224725", "autodeclaracao"));
 
         livroValido = new Livro();
         livroValido.setId(UUID.randomUUID());
         livroValido.setTitulo("Livro Teste");
         livroValido.setAutor(autor);
         livroValido.setIsbn("978-3-16-148410-0");
-        livroValido.setEditora("Editora Teste");
-        livroValido.setIdioma("pt-BR");
-        livroValido.setNumeroPaginas(200);
     }
 
-    @Test
-    @DisplayName("Deve aceitar arquivo PDF válido")
-    void validarArquivo_PdfValido_NaoDeveLancarExcecao() {
+    private MultipartFile pdf() {
         MultipartFile arquivo = mock(MultipartFile.class);
-        when(arquivo.isEmpty()).thenReturn(false);
-        when(arquivo.getContentType()).thenReturn("application/pdf");
         when(arquivo.getSize()).thenReturn(1024L * 1024L);
+        return arquivo;
+    }
 
-        when(minioService.uploadArquivo(any(MultipartFile.class), anyString())).thenReturn("livros/test.pdf");
-        when(livroRepository.save(any(Livro.class))).thenAnswer(i -> i.getArgument(0));
+    @Test
+    @DisplayName("Deve criar livro com PDF válido")
+    void criarLivro_PdfValido_DevePersistir() {
+        MultipartFile arquivo = pdf();
+        when(inspecionador.inspecionarCorpo(arquivo)).thenReturn("application/pdf");
+        when(minioService.uploadArquivo(eq(arquivo), eq("livros"), eq("application/pdf"))).thenReturn(KEY_ARQUIVO);
+        when(escrita.salvar(any(Livro.class))).thenAnswer(i -> i.getArgument(0));
 
         Livro resultado = livroService.criarLivro(livroValido, arquivo, null);
 
-        assertNotNull(resultado, "O livro criado não deve ser nulo");
-        assertEquals("livros/test.pdf", resultado.getArquivoKey(), "O arquivo key deve ser definido");
-        assertEquals(TipoArquivo.PDF, resultado.getTipoArquivo(), "O tipo deve ser PDF");
+        assertNotNull(resultado);
+        assertEquals(KEY_ARQUIVO, resultado.getArquivoKey());
+        assertEquals(TipoArquivo.PDF, resultado.getTipoArquivo());
+        assertNotNull(resultado.getIdentidadePublicador(),
+                "O livro nasce com a fotografia da identidade vigente de quem publicou");
+        verify(validacaoDeLivro).validarCadastro(livroValido);
     }
 
     @Test
-    @DisplayName("Deve aceitar arquivo EPUB válido")
-    void validarArquivo_EpubValido_NaoDeveLancarExcecao() {
+    @DisplayName("Deve enviar capa com o content type detectado no conteúdo")
+    void criarLivro_ComCapa_DeveUsarContentTypeDetectado() {
+        MultipartFile arquivo = pdf();
+        MultipartFile capa = mock(MultipartFile.class);
+        when(capa.getSize()).thenReturn(2048L);
+        when(inspecionador.inspecionarCorpo(arquivo)).thenReturn("application/pdf");
+        when(inspecionador.inspecionarCapa(capa)).thenReturn("image/png");
+        when(minioService.uploadArquivo(eq(arquivo), eq("livros"), eq("application/pdf"))).thenReturn(KEY_ARQUIVO);
+        when(minioService.uploadArquivo(eq(capa), eq("capas"), eq("image/png"))).thenReturn(KEY_CAPA);
+        when(escrita.salvar(any(Livro.class))).thenAnswer(i -> i.getArgument(0));
+
+        Livro resultado = livroService.criarLivro(livroValido, arquivo, capa);
+
+        assertEquals("image/png", resultado.getCapaContentType(),
+                "O content type servido é o do conteúdo, não o declarado pelo navegador");
+    }
+
+    @Test
+    @DisplayName("Deve remover objetos recém-enviados quando o banco falha")
+    void criarLivro_FalhaNoBanco_DeveCompensarMinIO() {
+        MultipartFile arquivo = pdf();
+        when(inspecionador.inspecionarCorpo(arquivo)).thenReturn("application/pdf");
+        when(minioService.uploadArquivo(eq(arquivo), eq("livros"), eq("application/pdf"))).thenReturn(KEY_ARQUIVO);
+        when(escrita.salvar(any(Livro.class))).thenThrow(new IllegalStateException("banco caiu"));
+
+        assertThrows(IllegalStateException.class, () -> livroService.criarLivro(livroValido, arquivo, null));
+
+        verify(minioService).deletarArquivo(KEY_ARQUIVO);
+    }
+
+    @Test
+    @DisplayName("Não deve tocar no storage quando a validação falha antes do upload")
+    void criarLivro_ValidacaoFalha_NaoDeveEnviarArquivo() {
         MultipartFile arquivo = mock(MultipartFile.class);
-        when(arquivo.isEmpty()).thenReturn(false);
-        when(arquivo.getContentType()).thenReturn("application/epub+zip");
-        when(arquivo.getSize()).thenReturn(2 * 1024L * 1024L);
+        when(inspecionador.inspecionarCorpo(arquivo)).thenThrow(new ArquivoInvalidoException("arquivo", "Apenas PDF e EPUB são aceitos"));
 
-        when(minioService.uploadArquivo(any(MultipartFile.class), anyString())).thenReturn("livros/test.epub");
-        when(livroRepository.save(any(Livro.class))).thenAnswer(i -> i.getArgument(0));
+        assertThrows(ArquivoInvalidoException.class, () -> livroService.criarLivro(livroValido, arquivo, null));
 
-        Livro resultado = livroService.criarLivro(livroValido, arquivo, null);
-
-        assertNotNull(resultado, "O livro criado não deve ser nulo");
-        assertEquals(TipoArquivo.EPUB, resultado.getTipoArquivo(), "O tipo deve ser EPUB");
+        verify(minioService, never()).uploadArquivo(any(), anyString(), anyString());
+        verify(escrita, never()).salvar(any());
     }
 
     @Test
-    @DisplayName("Deve rejeitar arquivo vazio")
-    void validarArquivo_ArquivoVazio_DeveLancarExcecao() {
-        MultipartFile arquivo = mock(MultipartFile.class);
-        when(arquivo.isEmpty()).thenReturn(true);
+    @DisplayName("Falha ao compensar não deve esconder o erro original")
+    void criarLivro_CompensacaoFalha_DevePropagarErroOriginal() {
+        MultipartFile arquivo = pdf();
+        when(inspecionador.inspecionarCorpo(arquivo)).thenReturn("application/pdf");
+        when(minioService.uploadArquivo(eq(arquivo), eq("livros"), eq("application/pdf"))).thenReturn(KEY_ARQUIVO);
+        when(escrita.salvar(any(Livro.class))).thenThrow(new IllegalStateException("banco caiu"));
+        doThrow(new RuntimeException("minio fora do ar")).when(minioService).deletarArquivo(KEY_ARQUIVO);
 
-        RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> livroService.criarLivro(livroValido, arquivo, null),
-                "Deve lançar exceção quando o arquivo está vazio");
-
-        assertTrue(ex.getMessage().contains("Falha ao criar livro"), "A mensagem deve informar falha ao criar livro");
+        assertThrows(IllegalStateException.class, () -> livroService.criarLivro(livroValido, arquivo, null));
     }
 
     @Test
-    @DisplayName("Deve rejeitar arquivo com tipo não suportado")
-    void validarArquivo_TipoNaoSuportado_DeveLancarExcecao() {
-        MultipartFile arquivo = mock(MultipartFile.class);
-        when(arquivo.isEmpty()).thenReturn(false);
-        when(arquivo.getContentType()).thenReturn("image/jpeg");
+    @DisplayName("Deve buscar livro com autor resolvido")
+    void buscarPorId_LivroExistente_DeveRetornarComAutor() {
+        when(livroRepository.findComAutorById(livroValido.getId())).thenReturn(Optional.of(livroValido));
 
-        RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> livroService.criarLivro(livroValido, arquivo, null),
-                "Deve lançar exceção quando o tipo de arquivo não é suportado");
+        Livro resultado = livroService.buscarPorId(livroValido.getId());
 
-        assertTrue(ex.getMessage().contains("Falha ao criar livro"), "A mensagem deve informar falha ao criar livro");
+        assertNotNull(resultado.getAutor(), "O autor precisa vir carregado para o mapper");
     }
 
     @Test
-    @DisplayName("Deve rejeitar arquivo maior que 50MB")
-    void validarArquivo_ArquivoMuitoGrande_DeveLancarExcecao() {
-        MultipartFile arquivo = mock(MultipartFile.class);
-        when(arquivo.isEmpty()).thenReturn(false);
-        when(arquivo.getContentType()).thenReturn("application/pdf");
-        when(arquivo.getSize()).thenReturn(51 * 1024L * 1024L);
-
-        RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> livroService.criarLivro(livroValido, arquivo, null),
-                "Deve lançar exceção quando o arquivo é maior que 50MB");
-
-        assertTrue(ex.getMessage().contains("Falha ao criar livro"), "A mensagem deve informar falha ao criar livro");
-    }
-
-    @Test
-    @DisplayName("Deve rejeitar livro sem autor")
-    void validarLivro_SemAutor_DeveLancarExcecao() {
-        livroValido.setAutor(null);
-
-        MultipartFile arquivo = mock(MultipartFile.class);
-        when(arquivo.isEmpty()).thenReturn(false);
-        when(arquivo.getContentType()).thenReturn("application/pdf");
-        when(arquivo.getSize()).thenReturn(1024L);
-
-        RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> livroService.criarLivro(livroValido, arquivo, null),
-                "Deve lançar exceção quando o livro não tem autor");
-
-        assertTrue(ex.getMessage().contains("Falha ao criar livro"), "A mensagem deve informar falha ao criar livro");
-    }
-
-    @Test
-    @DisplayName("Deve rejeitar ISBN duplicado")
-    void validarLivro_IsbnDuplicado_DeveLancarExcecao() {
-        when(livroRepository.existsByIsbn("978-3-16-148410-0")).thenReturn(true);
-
-        MultipartFile arquivo = mock(MultipartFile.class);
-        when(arquivo.isEmpty()).thenReturn(false);
-        when(arquivo.getContentType()).thenReturn("application/pdf");
-        when(arquivo.getSize()).thenReturn(1024L);
-
-        RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> livroService.criarLivro(livroValido, arquivo, null),
-                "Deve lançar exceção quando o ISBN já está cadastrado");
-
-        assertTrue(ex.getMessage().contains("Falha ao criar livro"), "A mensagem deve informar falha ao criar livro");
-    }
-
-    @Test
-    @DisplayName("Deve buscar livro por ID com sucesso")
-    void buscarPorId_LivroExistente_DeveRetornarLivro() {
+    @DisplayName("Deve lançar exceção específica quando o livro não existe")
+    void buscarPorId_Inexistente_DeveLancarExcecaoDeDominio() {
         UUID id = UUID.randomUUID();
-        when(livroRepository.findById(id)).thenReturn(Optional.of(livroValido));
+        when(livroRepository.findComAutorById(id)).thenReturn(Optional.empty());
 
-        Livro resultado = livroService.buscarPorId(id);
-
-        assertNotNull(resultado, "O livro não deve ser nulo");
-        assertEquals("Livro Teste", resultado.getTitulo(), "O título deve corresponder");
+        assertThrows(LivroNaoEncontradoException.class, () -> livroService.buscarPorId(id));
     }
 
     @Test
-    @DisplayName("Deve lançar exceção ao buscar livro inexistente")
-    void buscarPorId_LivroNaoEncontrado_DeveLancarExcecao() {
-        UUID idInexistente = UUID.randomUUID();
-        when(livroRepository.findById(idInexistente)).thenReturn(Optional.empty());
-
-        RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> livroService.buscarPorId(idInexistente),
-                "Deve lançar exceção quando o livro não existe");
-
-        assertTrue(ex.getMessage().contains("Livro não encontrado"), "A mensagem deve informar que o livro não foi encontrado");
+    @DisplayName("Deve recusar download de livro sem arquivo")
+    void downloadArquivo_SemArquivo_DeveLancarExcecao() {
+        assertThrows(ArquivoIndisponivelException.class, () -> livroService.downloadArquivo(livroValido));
     }
 
     @Test
-    @DisplayName("Deve deletar livro com sucesso")
-    void deletarLivro_LivroExistente_DeveDeletar() {
-        UUID id = UUID.randomUUID();
-        when(livroRepository.findById(id)).thenReturn(Optional.of(livroValido));
-        livroValido.setArquivoKey("livros/test.pdf");
-        livroValido.setCapaKey("capas/test.jpg");
+    @DisplayName("Deve recusar download de capa quando o livro não tem capa")
+    void downloadCapa_SemCapa_DeveLancarExcecao() {
+        assertThrows(ArquivoIndisponivelException.class, () -> livroService.downloadCapa(livroValido));
+    }
 
-        assertDoesNotThrow(() -> livroService.deletarLivro(id), "Não deve lançar exceção ao deletar livro existente");
+    @Test
+    @DisplayName("Deve escrever a nova chave antes de liberar a antiga ao trocar o arquivo")
+    void atualizarArquivo_DeveManterArquivoAntigoAteOBancoConfirmar() {
+        MultipartFile arquivo = pdf();
+        livroValido.setArquivoKey("livros/antigo.pdf");
+        when(livroRepository.findComAutorById(livroValido.getId())).thenReturn(Optional.of(livroValido));
+        when(inspecionador.inspecionarCorpo(arquivo)).thenReturn("application/epub+zip");
+        when(minioService.uploadArquivo(eq(arquivo), eq("livros"), eq("application/epub+zip"))).thenReturn(KEY_ARQUIVO);
+        when(escrita.salvar(any(Livro.class))).thenAnswer(i -> i.getArgument(0));
 
+        Livro resultado = livroService.atualizarArquivo(livroValido.getId(), arquivo);
+
+        assertEquals(TipoArquivo.EPUB, resultado.getTipoArquivo());
+        // ordem: gravar metadados → só então apagar o objeto antigo
+        InOrder ordem = inOrder(escrita, minioService);
+        ordem.verify(escrita).salvar(any(Livro.class));
+        ordem.verify(minioService).deletarArquivo("livros/antigo.pdf");
+    }
+
+    @Test
+    @DisplayName("Falha no banco ao trocar o arquivo deve manter o arquivo antigo intacto")
+    void atualizarArquivo_FalhaNoBanco_NaoDevePerderArquivoAntigo() {
+        MultipartFile arquivo = pdf();
+        livroValido.setArquivoKey("livros/antigo.pdf");
+        when(livroRepository.findComAutorById(livroValido.getId())).thenReturn(Optional.of(livroValido));
+        when(inspecionador.inspecionarCorpo(arquivo)).thenReturn("application/pdf");
+        when(minioService.uploadArquivo(eq(arquivo), eq("livros"), eq("application/pdf"))).thenReturn(KEY_ARQUIVO);
+        when(escrita.salvar(any(Livro.class))).thenThrow(new IllegalStateException("banco caiu"));
+
+        assertThrows(IllegalStateException.class, () -> livroService.atualizarArquivo(livroValido.getId(), arquivo));
+
+        verify(minioService).deletarArquivo(KEY_ARQUIVO);
+        verify(minioService, never()).deletarArquivo("livros/antigo.pdf");
+    }
+
+    @Test
+    @DisplayName("Trocar a capa não deve apagar a antiga antes do banco confirmar")
+    void atualizarCapa_FalhaNoBanco_DeveManterCapaAntiga() {
+        MultipartFile novaCapa = mock(MultipartFile.class);
+        when(novaCapa.getSize()).thenReturn(2048L);
+        livroValido.setCapaKey("capas/antiga.jpg");
+        when(livroRepository.findComAutorById(livroValido.getId())).thenReturn(Optional.of(livroValido));
+        when(inspecionador.inspecionarCapa(novaCapa)).thenReturn("image/jpeg");
+        when(minioService.uploadArquivo(eq(novaCapa), eq("capas"), eq("image/jpeg"))).thenReturn(KEY_CAPA);
+        when(escrita.salvar(any(Livro.class))).thenThrow(new IllegalStateException("banco caiu"));
+
+        assertThrows(IllegalStateException.class, () -> livroService.atualizarCapa(livroValido.getId(), novaCapa));
+
+        verify(minioService).deletarArquivo(KEY_CAPA);
+        verify(minioService, never()).deletarArquivo("capas/antiga.jpg");
+    }
+
+    @Test
+    @DisplayName("Remover capa deve limpar o banco antes de apagar o objeto")
+    void removerCapa_DeveLimparBancoPrimeiro() {
+        livroValido.setCapaKey(KEY_CAPA);
+        when(livroRepository.findComAutorById(livroValido.getId())).thenReturn(Optional.of(livroValido));
+
+        livroService.removerCapa(livroValido.getId());
+
+        InOrder ordem = inOrder(escrita, minioService);
+        ordem.verify(escrita).salvar(livroValido);
+        ordem.verify(minioService).deletarArquivo(KEY_CAPA);
+    }
+
+    @Test
+    @DisplayName("Deve deletar livro no banco e no storage")
+    void deletarLivro_LivroExistente_DeveRemoverBancoEStrorage() {
+        UUID id = livroValido.getId();
+        livroValido.setArquivoKey(KEY_ARQUIVO);
+        livroValido.setCapaKey(KEY_CAPA);
+        when(livroRepository.findComAutorById(id)).thenReturn(Optional.of(livroValido));
+
+        livroService.deletarLivro(id);
+
+        verify(escrita, times(1)).excluir(livroValido);
         verify(minioService, times(2)).deletarArquivo(anyString());
-        verify(livroRepository, times(1)).delete(livroValido);
     }
 
     @Test
-    @DisplayName("Deve lançar exceção ao deletar livro inexistente")
-    void deletarLivro_LivroNaoEncontrado_DeveLancarExcecao() {
-        UUID idInexistente = UUID.randomUUID();
-        when(livroRepository.findById(idInexistente)).thenReturn(Optional.empty());
+    @DisplayName("Livro inexistente deve dar 404 de domínio ao deletar")
+    void deletarLivro_Inexistente_DeveLancarExcecaoDeDominio() {
+        UUID id = UUID.randomUUID();
+        when(livroRepository.findComAutorById(id)).thenReturn(Optional.empty());
 
-        RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> livroService.deletarLivro(idInexistente),
-                "Deve lançar exceção ao tentar deletar livro que não existe");
-
-        assertTrue(ex.getMessage().contains("Livro não encontrado"), "A mensagem deve informar que o livro não existe");
+        assertThrows(LivroNaoEncontradoException.class, () -> livroService.deletarLivro(id));
     }
 }

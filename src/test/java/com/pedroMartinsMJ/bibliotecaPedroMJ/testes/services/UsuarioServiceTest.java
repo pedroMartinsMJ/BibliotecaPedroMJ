@@ -1,16 +1,23 @@
 package com.pedroMartinsMJ.bibliotecaPedroMJ.testes.services;
 
+import com.pedroMartinsMJ.bibliotecaPedroMJ.entities.Identidade;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.entities.Livro;
 import com.pedroMartinsMJ.bibliotecaPedroMJ.entities.Role;
 import com.pedroMartinsMJ.bibliotecaPedroMJ.entities.Usuario;
-import com.pedroMartinsMJ.bibliotecaPedroMJ.repositorys.RoleRepository;
-import com.pedroMartinsMJ.bibliotecaPedroMJ.repositorys.UsuarioRepository;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.repositories.IdentidadeRepository;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.repositories.RoleRepository;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.repositories.UsuarioRepository;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.security.HashDeEmail;
 import com.pedroMartinsMJ.bibliotecaPedroMJ.services.UsuarioService;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.tratamentoDeErros.exceptions.EmailEmUsoException;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.tratamentoDeErros.exceptions.RoleNaoEncontradaException;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.tratamentoDeErros.exceptions.UsuarioNaoEncontradoException;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.tratamentoDeErros.exceptions.UsernameEmUsoException;
 import com.pedroMartinsMJ.bibliotecaPedroMJ.validators.ValidacaoUsuario;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -20,17 +27,28 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class UsuarioServiceTest {
     @Mock private UsuarioRepository usuarioRepository;
+    @Mock private IdentidadeRepository identidadeRepository;
     @Mock private RoleRepository roleRepository;
     @Mock private PasswordEncoder passwordEncoder;
     @Mock private ValidacaoUsuario validacaoUsuario;
+    @Mock private HashDeEmail hashDeEmail;
     @InjectMocks private UsuarioService usuarioService;
     private Usuario usuarioValido;
     private Role roleUser;
@@ -44,7 +62,6 @@ class UsuarioServiceTest {
         usuarioValido.setId(UUID.randomUUID());
         usuarioValido.setUsername("usuario_teste");
         usuarioValido.setPassword("senha123");
-        usuarioValido.setNome("Usuario Teste");
         usuarioValido.setEmail("teste@email.com");
         usuarioValido.setDataCadastro(LocalDateTime.now());
         usuarioValido.setAtivo(true);
@@ -53,40 +70,48 @@ class UsuarioServiceTest {
     @Test
     @DisplayName("Deve salvar usuário com sucesso quando todos os dados são válidos")
     void salvarUsuario_ComDadosValidos_DeveSalvarComSucesso() {
-        when(usuarioRepository.existsByUsername("usuario_teste")).thenReturn(false);
-        when(usuarioRepository.existsByEmail("teste@email.com")).thenReturn(false);
         when(passwordEncoder.encode("senha123")).thenReturn("senha_criptografada");
         when(roleRepository.findByName("ROLE_USER")).thenReturn(Optional.of(roleUser));
+        when(hashDeEmail.calcular("teste@email.com")).thenReturn("indice-de-teste");
         when(usuarioRepository.save(any(Usuario.class))).thenAnswer(i -> i.getArgument(0));
 
         Usuario resultado = usuarioService.salvarUsuario(usuarioValido);
 
         assertNotNull(resultado, "O usuário salvo não deve ser nulo");
         assertEquals("senha_criptografada", resultado.getPassword(), "A senha deve ser criptografada antes de salvar");
+        assertEquals("indice-de-teste", resultado.getEmailHash(),
+                "O índice de busca do e-mail deve ser gravado junto");
         assertTrue(resultado.getRoles().contains(roleUser), "O usuário deve receber a role ROLE_USER automaticamente");
+        verify(validacaoUsuario).validarCamposUsuario(usuarioValido);
         verify(passwordEncoder, times(1)).encode("senha123");
-        verify(usuarioRepository, times(1)).save(any(Usuario.class));
     }
 
     @Test
-    @DisplayName("Deve lançar exceção quando username já está em uso")
-    void salvarUsuario_UsernameDuplicado_DeveLancarExcecao() {
-        when(usuarioRepository.existsByUsername("usuario_teste")).thenReturn(true);
+    @DisplayName("Deve falhar antes de criptografar a senha quando o cadastro é inválido")
+    void salvarUsuario_ValidacaoFalha_NaoDeveCriptografarSenha() {
+        doThrow(new UsernameEmUsoException()).when(validacaoUsuario).validarCamposUsuario(usuarioValido);
 
-        assertThrows(RuntimeException.class,
-                () -> usuarioService.salvarUsuario(usuarioValido),
-                "Deve lançar exceção quando username duplicado");
+        assertThrows(UsernameEmUsoException.class, () -> usuarioService.salvarUsuario(usuarioValido));
+
+        verify(passwordEncoder, never()).encode(any());
+        verify(usuarioRepository, never()).save(any());
     }
 
     @Test
-    @DisplayName("Deve lançar exceção quando email já está em uso")
+    @DisplayName("Deve propagar e-mail duplicado detectado pelo validador")
     void salvarUsuario_EmailDuplicado_DeveLancarExcecao() {
-        when(usuarioRepository.existsByUsername("usuario_teste")).thenReturn(false);
-        when(usuarioRepository.existsByEmail("teste@email.com")).thenReturn(true);
+        doThrow(new EmailEmUsoException()).when(validacaoUsuario).validarCamposUsuario(usuarioValido);
 
-        assertThrows(RuntimeException.class,
-                () -> usuarioService.salvarUsuario(usuarioValido),
-                "Deve lançar exceção quando email duplicado");
+        assertThrows(EmailEmUsoException.class, () -> usuarioService.salvarUsuario(usuarioValido));
+    }
+
+    @Test
+    @DisplayName("Deve falhar quando a role padrão não está no banco")
+    void salvarUsuario_RolePadraoAusente_DeveLancarExcecao() {
+        when(passwordEncoder.encode("senha123")).thenReturn("senha_criptografada");
+        when(roleRepository.findByName("ROLE_USER")).thenReturn(Optional.empty());
+
+        assertThrows(RoleNaoEncontradaException.class, () -> usuarioService.salvarUsuario(usuarioValido));
     }
 
     @Test
@@ -97,30 +122,95 @@ class UsuarioServiceTest {
         usuarioNoBanco.setId(id);
         usuarioNoBanco.setUsername("usuario_antigo");
         usuarioNoBanco.setEmail("antigo@email.com");
-        usuarioNoBanco.setNome("Nome Antigo");
+        usuarioNoBanco.setPassword("hash_antigo");
+        Identidade identidadeNoBanco = new Identidade(usuarioNoBanco, "Nome Antigo", "52998224725", "autodeclaracao");
+        usuarioNoBanco.setIdentidadeAtual(identidadeNoBanco);
 
         Usuario usuarioAtualizado = new Usuario();
-        usuarioAtualizado.setNome("Novo Nome");
         usuarioAtualizado.setEmail("novo@email.com");
 
         when(usuarioRepository.findById(id)).thenReturn(Optional.of(usuarioNoBanco));
+        when(hashDeEmail.calcular("novo@email.com")).thenReturn("indice-novo");
         when(usuarioRepository.save(any(Usuario.class))).thenAnswer(i -> i.getArgument(0));
 
         Usuario resultado = usuarioService.atualizarDados(id, usuarioAtualizado);
 
-        assertEquals("Novo Nome", resultado.getNome(), "O nome deve ser atualizado");
         assertEquals("novo@email.com", resultado.getEmail(), "O email deve ser atualizado");
-        assertEquals(usuarioNoBanco.getPassword(), resultado.getPassword(), "A senha não deve ser alterada pelo método atualizarDados");
+        assertEquals("indice-novo", resultado.getEmailHash(), "O índice deve acompanhar o novo email");
+        assertEquals("hash_antigo", resultado.getPassword(), "A senha não deve ser alterada pelo método atualizarDados");
+        assertSame(identidadeNoBanco, resultado.getIdentidadeAtual(),
+                "Identidade civil não muda por aqui: é declaração da própria pessoa, com histórico próprio");
     }
 
     @Test
-    @DisplayName("Deve deletar usuário existente com sucesso")
-    void deletarUsuario_UsuarioExistente_DeveDeletar() {
+    @DisplayName("Deve desativar usuário em vez de apagar a linha")
+    void deletarUsuario_UsuarioExistente_DeveDesativar() {
         UUID id = UUID.randomUUID();
-        when(usuarioRepository.existsById(id)).thenReturn(true);
+        when(usuarioRepository.findById(id)).thenReturn(Optional.of(usuarioValido));
 
-        assertDoesNotThrow(() -> usuarioService.deletarUsuario(id), "Não deve lançar exceção ao deletar usuário existente");
-        verify(usuarioRepository, times(1)).deleteById(id);
+        assertDoesNotThrow(() -> usuarioService.deletarUsuario(id));
+
+        assertFalse(usuarioValido.isAtivo(), "Livros e biblioteca do usuário não devem ser cascados fora");
+        verify(usuarioRepository, never()).deleteById(any());
+    }
+
+    @Test
+    @DisplayName("Deve esconder os livros do autor junto com a conta desativada")
+    void deletarUsuario_ComLivros_DeveDesativarAcervoTambem() {
+        UUID id = UUID.randomUUID();
+        Livro livro = new Livro();
+        livro.setTitulo("Livro da conta fechada");
+        usuarioValido.addLivro(livro);
+        when(usuarioRepository.findById(id)).thenReturn(Optional.of(usuarioValido));
+
+        usuarioService.deletarUsuario(id);
+
+        assertFalse(livro.isAtivo(), "Livro de conta desativada não pode continuar público");
+        verify(usuarioRepository, never()).deleteById(any());
+    }
+
+    @Test
+    @DisplayName("Deve devolver o acervo quando a conta é reativada")
+    void reativarUsuario_ContaDesativada_DeveReabrirAcervo() {
+        UUID id = UUID.randomUUID();
+        Livro livro = new Livro();
+        livro.setAtivo(false);
+        usuarioValido.addLivro(livro);
+        usuarioValido.setAtivo(false);
+        when(usuarioRepository.findById(id)).thenReturn(Optional.of(usuarioValido));
+
+        usuarioService.reativarUsuario(id);
+
+        assertTrue(usuarioValido.isAtivo());
+        assertTrue(livro.isAtivo(), "Reabrir a conta devolve o que estava escondido");
+    }
+
+    @Test
+    @DisplayName("Deve gravar a identidade como linha nova e apontar a conta para ela")
+    void confirmarIdentidade_CpfFormatado_DeveNormalizarEGravarLinha() {
+        UUID id = UUID.randomUUID();
+        when(usuarioRepository.findById(id)).thenReturn(Optional.of(usuarioValido));
+        when(identidadeRepository.save(any(Identidade.class))).thenAnswer(i -> i.getArgument(0));
+
+        Identidade resultado = usuarioService.confirmarIdentidade(
+                id, "  Pedro Martins  ", "123.456.789-01", "autodeclaracao");
+
+        assertEquals("Pedro Martins", resultado.getNome(), "Nome sem espaços nas pontas");
+        assertEquals("12345678901", resultado.getCpf(), "CPF sem máscara, para a mesma pessoa não ter duas versões");
+        assertEquals("autodeclaracao", resultado.getMotivo(), "De onde a linha veio fica registrado");
+        assertSame(usuarioValido, resultado.getUsuario());
+        assertSame(resultado, usuarioValido.getIdentidadeAtual(), "A conta passa a apontar para a linha vigente");
+        assertTrue(usuarioValido.temIdentidadeVerificada());
+        verify(identidadeRepository).save(resultado);
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção específica ao buscar usuário inexistente")
+    void deletarUsuario_Inexistente_DeveLancarExcecaoDeDominio() {
+        UUID id = UUID.randomUUID();
+        when(usuarioRepository.findById(id)).thenReturn(Optional.empty());
+
+        assertThrows(UsuarioNaoEncontradoException.class, () -> usuarioService.deletarUsuario(id));
     }
 
     @Test
@@ -136,6 +226,15 @@ class UsuarioServiceTest {
     }
 
     @Test
+    @DisplayName("Deve buscar por e-mail através do índice HMAC")
+    void buscarPorEmail_DeveConsultarPeloIndice() {
+        when(hashDeEmail.calcular("teste@email.com")).thenReturn("indice-de-teste");
+        when(usuarioRepository.findByEmailHash("indice-de-teste")).thenReturn(Optional.of(usuarioValido));
+
+        assertTrue(usuarioService.buscarPorEmail("teste@email.com").isPresent());
+    }
+
+    @Test
     @DisplayName("Deve retornar true quando a senha coincide com a criptografada")
     void verificarSenha_SenhaCorreta_DeveRetornarTrue() {
         when(passwordEncoder.matches("minhaSenha", "$2a$10$hash")).thenReturn(true);
@@ -148,7 +247,7 @@ class UsuarioServiceTest {
     void verificarSenha_SenhaIncorreta_DeveRetornarFalse() {
         when(passwordEncoder.matches("senhaErrada", "$2a$10$hash")).thenReturn(false);
         boolean resultado = usuarioService.verificarSenha("senhaErrada", "$2a$10$hash");
-        assertFalse(resultado, "Deve retornar false quando a senha não corresponde");
+        assertFalse(resultado, "Deve retornar false quando a senha corresponde");
     }
 
     @Test
@@ -161,10 +260,10 @@ class UsuarioServiceTest {
 
         when(usuarioRepository.findById(id)).thenReturn(Optional.of(usuario));
         when(passwordEncoder.encode("novaSenha")).thenReturn("nova_senha_criptografada");
-        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(i -> i.getArgument(0));
 
-        assertDoesNotThrow(() -> usuarioService.atualizarSenha(id, "novaSenha"), "Não deve lançar exceção ao atualizar senha");
+        assertDoesNotThrow(() -> usuarioService.atualizarSenha(id, "novaSenha"),
+                "Não deve lançar exceção ao atualizar senha");
         verify(passwordEncoder, times(1)).encode("novaSenha");
-        verify(usuarioRepository, times(1)).save(any(Usuario.class));
+        assertEquals("nova_senha_criptografada", usuario.getPassword());
     }
 }
