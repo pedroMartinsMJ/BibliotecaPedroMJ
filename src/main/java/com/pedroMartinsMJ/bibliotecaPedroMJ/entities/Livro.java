@@ -34,8 +34,14 @@ public class Livro {
     @Column(length = 2000)
     private String descricao;
 
-    @Column(unique = true)
+    // ISBN não é único: duas contas podem publicar a mesma obra com arquivos,
+    // fontes ou capas diferentes. O texto livre do autor da obra (Machado, um
+    // anônimo, domínio público) mora em autorObra; a conta logada é só quem
+    // publicou.
     private String isbn;
+
+    @Column(name = "autor_obra", length = 255)
+    private String autorObra;
 
     private String editora;
 
@@ -47,11 +53,12 @@ public class Livro {
 
     private String idioma;
 
-    // ====== RELACIONAMENTO COM AUTOR (Usuario) ======
+    // Conta que publicou. A coluna autor_id é o nome histórico no banco; o Java
+    // chama publicadoPor para não confundir com o autor da obra.
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "autor_id")
     @JsonIgnore
-    private Usuario autor;
+    private Usuario publicadoPor;
 
     // Fotografia da identidade civil que valia quando este livro foi publicado.
     // Aponta para a linha imutável de usuario_identidades: nem uma correção de

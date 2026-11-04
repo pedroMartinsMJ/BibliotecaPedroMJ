@@ -67,11 +67,11 @@ describe('AuthService', () => {
   });
 
   it('deve cadastrar usuário via register', () => {
-    service.register({ nome: 'Pedro', email: 'pedro@test.com', senha: '123' }).subscribe();
+    service.register({ username: 'pedro', email: 'pedro@test.com', senha: '123' }).subscribe();
 
     const req = httpMock.expectOne('/api/auth/register');
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({ nome: 'Pedro', email: 'pedro@test.com', senha: '123' });
+    expect(req.request.body).toEqual({ username: 'pedro', email: 'pedro@test.com', senha: '123' });
     req.flush(null);
   });
 

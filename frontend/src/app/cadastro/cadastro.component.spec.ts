@@ -36,10 +36,10 @@ describe('CadastroComponent', () => {
   it('deve chamar authService.register ao cadastrar e redirecionar', fakeAsync(() => {
     authService.register.and.returnValue(of(undefined as any));
 
-    component.dados = { nome: 'Pedro', email: 'pedro@test.com', senha: '123456' };
+    component.dados = { username: 'pedro', email: 'pedro@test.com', senha: '123456' };
     component.cadastrar();
 
-    expect(authService.register).toHaveBeenCalledWith({ nome: 'Pedro', email: 'pedro@test.com', senha: '123456' });
+    expect(authService.register).toHaveBeenCalledWith({ username: 'pedro', email: 'pedro@test.com', senha: '123456' });
     expect(component.mensagemSucesso).toContain('Conta criada!');
 
     tick(1500);
@@ -49,7 +49,7 @@ describe('CadastroComponent', () => {
   it('deve exibir mensagem de erro quando o cadastro falha', () => {
     authService.register.and.returnValue(throwError(() => ({ error: { message: 'Email duplicado' } })));
 
-    component.dados = { nome: 'Pedro', email: 'pedro@test.com', senha: '123456' };
+    component.dados = { username: 'pedro', email: 'pedro@test.com', senha: '123456' };
     component.cadastrar();
 
     expect(component.mensagemErro).toBe('Email duplicado');

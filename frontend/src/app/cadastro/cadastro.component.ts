@@ -14,8 +14,10 @@ import { RegisterRequest } from '../models/auth.model';
       <h1>Criar conta</h1>
       <form (ngSubmit)="cadastrar()" class="form" novalidate>
         <div class="campo">
-          <label for="nome">Nome</label>
-          <input id="nome" type="text" name="nome" [(ngModel)]="dados.nome" required />
+          <label for="username">Nome de usuário</label>
+          <input id="username" type="text" name="username" [(ngModel)]="dados.username"
+                 minlength="3" maxlength="50" pattern="[a-zA-Z0-9._-]+" required />
+          <small>É o que aparece no site. O nome real só é pedido se você for publicar.</small>
         </div>
         <div class="campo">
           <label for="email">Email</label>
@@ -76,7 +78,7 @@ import { RegisterRequest } from '../models/auth.model';
   `],
 })
 export class CadastroComponent {
-  dados: RegisterRequest = { nome: '', email: '', senha: '' };
+  dados: RegisterRequest = { username: '', email: '', senha: '' };
   carregando = false;
   mensagemErro: string | null = null;
   mensagemSucesso: string | null = null;

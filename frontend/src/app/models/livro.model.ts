@@ -1,31 +1,44 @@
+export interface Publicador {
+  id: string;
+  username: string;
+}
+
 export interface Livro {
   id?: string;
   titulo: string;
-  autor: string;
+  autorObra: string;
+  publicadoPor?: Publicador;
   descricao?: string;
   editora?: string;
   isbn?: string;
-  numero_paginas?: number;
-  tipo_arquivo?: 'PDF' | 'EPUB';
-  formato_arquivo?: 'PDF' | 'EPUB';
-  status_leitura?: 'LER' | 'LENDO' | 'LEU';
-  data_publicacao?: string;
+  numeroPaginas?: number;
+  tipoArquivo?: 'PDF' | 'EPUB';
+  dataPublicacao?: string;
   idioma?: string;
-  tamanho_bytes?: number;
-  arquivo_key?: string;
-  capa_key?: string;
-  data_cadastro?: string;
-  data_upload?: string;
-  ativo?: boolean;
+  tamanhoBytes?: number;
+  temArquivo?: boolean;
+  temCapa?: boolean;
+  dataCadastro?: string;
+  dataUpload?: string;
 }
 
+/** Página do Spring Data como o backend a serializa (chaves em inglês). */
+export interface Paginacao<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+}
+
+/** Corpo de POST /api/livros — sem quem publica: o publicador sai do token. */
 export interface LivroDTO_CREATE {
   titulo: string;
-  autor: string;
+  autorObra: string;
   descricao?: string;
   editora?: string;
   isbn?: string;
-  numero_paginas?: number;
-  tipo_arquivo?: 'PDF' | 'EPUB';
+  dataPublicacao?: string;
+  numeroPaginas?: number;
   idioma?: string;
 }

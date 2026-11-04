@@ -42,33 +42,34 @@ class RastroDePublicacaoTest {
     @Test
     @DisplayName("Livro publicado mantém a identidade do dia, mesmo depois de a conta confirmar outra")
     void snapshotDaIdentidadeNaoMudaComCorrecaoPosterior() {
-        Usuario autor = new Usuario("rastro.teste", passwordEncoder.encode("senha-forte"), "rastro@biblioteca.local");
-        autor = usuarioService.salvarUsuario(autor);
+        Usuario publicador = new Usuario("rastro.teste", passwordEncoder.encode("senha-forte"), "rastro@biblioteca.local");
+        publicador = usuarioService.salvarUsuario(publicador);
 
         Identidade identidadeDaPublicacao = usuarioService.confirmarIdentidade(
-                autor.getId(), "Nome Que Publicou", "52998224725", "autodeclaracao");
+                publicador.getId(), "Nome Que Publicou", "52998224725", "autodeclaracao");
 
         Livro livro = new Livro();
         livro.setTitulo("Livro com rastro");
+        livro.setAutorObra("Autor da Obra");
         livro.setIsbn(UUID.randomUUID().toString().substring(0, 13));
         livro.setIdentidadePublicador(identidadeDaPublicacao);
-        autor.addLivro(livro);
+        publicador.addLivro(livro);
         livro = livroRepository.save(livro);
 
         UUID idDoLivro = livro.getId();
         UUID identidadeDoLivro = livro.getIdentidadePublicador().getId();
 
-        usuarioService.confirmarIdentidade(autor.getId(), "Nome Corrigido Depois", "52998224725", "correcao");
+        usuarioService.confirmarIdentidade(publicador.getId(), "Nome Corrigido Depois", "52998224725", "correcao");
         usuarioRepository.flush();
         entityManager.clear();
 
-        Livro recarregado = livroRepository.findComAutorById(idDoLivro).orElseThrow();
+        Livro recarregado = livroRepository.findComPublicadorById(idDoLivro).orElseThrow();
 
         assertEquals("Nome Que Publicou", recarregado.getIdentidadePublicador().getNome(),
                 "A fotografia do momento da publicação não é reescrita por uma correção futura");
         assertEquals(identidadeDoLivro, recarregado.getIdentidadePublicador().getId());
-        assertNotEquals(identidadeDoLivro, recarregado.getAutor().getIdentidadeAtual().getId(),
+        assertNotEquals(identidadeDoLivro, recarregado.getPublicadoPor().getIdentidadeAtual().getId(),
                 "A conta hoje aponta para outra linha do histórico");
-        assertEquals("Nome Corrigido Depois", recarregado.getAutor().nomeRealVigente());
+        assertEquals("Nome Corrigido Depois", recarregado.getPublicadoPor().nomeRealVigente());
     }
 }

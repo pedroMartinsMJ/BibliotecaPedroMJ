@@ -57,15 +57,16 @@ class LivroServiceTest {
 
     @BeforeEach
     void setUp() {
-        Usuario autor = new Usuario();
-        autor.setId(UUID.randomUUID());
-        autor.setUsername("autor_teste");
-        autor.setIdentidadeAtual(new Identidade(autor, "Autor Teste", "52998224725", "autodeclaracao"));
+        Usuario publicador = new Usuario();
+        publicador.setId(UUID.randomUUID());
+        publicador.setUsername("publicador_teste");
+        publicador.setIdentidadeAtual(new Identidade(publicador, "Autor Teste", "52998224725", "autodeclaracao"));
 
         livroValido = new Livro();
         livroValido.setId(UUID.randomUUID());
         livroValido.setTitulo("Livro Teste");
-        livroValido.setAutor(autor);
+        livroValido.setAutorObra("Machado de Assis");
+        livroValido.setPublicadoPor(publicador);
         livroValido.setIsbn("978-3-16-148410-0");
     }
 
@@ -149,20 +150,20 @@ class LivroServiceTest {
     }
 
     @Test
-    @DisplayName("Deve buscar livro com autor resolvido")
-    void buscarPorId_LivroExistente_DeveRetornarComAutor() {
-        when(livroRepository.findComAutorById(livroValido.getId())).thenReturn(Optional.of(livroValido));
+    @DisplayName("Deve buscar livro com publicador resolvido")
+    void buscarPorId_LivroExistente_DeveRetornarComPublicador() {
+        when(livroRepository.findComPublicadorById(livroValido.getId())).thenReturn(Optional.of(livroValido));
 
         Livro resultado = livroService.buscarPorId(livroValido.getId());
 
-        assertNotNull(resultado.getAutor(), "O autor precisa vir carregado para o mapper");
+        assertNotNull(resultado.getPublicadoPor(), "O publicador precisa vir carregado para o mapper");
     }
 
     @Test
     @DisplayName("Deve lançar exceção específica quando o livro não existe")
     void buscarPorId_Inexistente_DeveLancarExcecaoDeDominio() {
         UUID id = UUID.randomUUID();
-        when(livroRepository.findComAutorById(id)).thenReturn(Optional.empty());
+        when(livroRepository.findComPublicadorById(id)).thenReturn(Optional.empty());
 
         assertThrows(LivroNaoEncontradoException.class, () -> livroService.buscarPorId(id));
     }
@@ -184,7 +185,7 @@ class LivroServiceTest {
     void atualizarArquivo_DeveManterArquivoAntigoAteOBancoConfirmar() {
         MultipartFile arquivo = pdf();
         livroValido.setArquivoKey("livros/antigo.pdf");
-        when(livroRepository.findComAutorById(livroValido.getId())).thenReturn(Optional.of(livroValido));
+        when(livroRepository.findComPublicadorById(livroValido.getId())).thenReturn(Optional.of(livroValido));
         when(inspecionador.inspecionarCorpo(arquivo)).thenReturn("application/epub+zip");
         when(minioService.uploadArquivo(eq(arquivo), eq("livros"), eq("application/epub+zip"))).thenReturn(KEY_ARQUIVO);
         when(escrita.salvar(any(Livro.class))).thenAnswer(i -> i.getArgument(0));
@@ -203,7 +204,7 @@ class LivroServiceTest {
     void atualizarArquivo_FalhaNoBanco_NaoDevePerderArquivoAntigo() {
         MultipartFile arquivo = pdf();
         livroValido.setArquivoKey("livros/antigo.pdf");
-        when(livroRepository.findComAutorById(livroValido.getId())).thenReturn(Optional.of(livroValido));
+        when(livroRepository.findComPublicadorById(livroValido.getId())).thenReturn(Optional.of(livroValido));
         when(inspecionador.inspecionarCorpo(arquivo)).thenReturn("application/pdf");
         when(minioService.uploadArquivo(eq(arquivo), eq("livros"), eq("application/pdf"))).thenReturn(KEY_ARQUIVO);
         when(escrita.salvar(any(Livro.class))).thenThrow(new IllegalStateException("banco caiu"));
@@ -220,7 +221,7 @@ class LivroServiceTest {
         MultipartFile novaCapa = mock(MultipartFile.class);
         when(novaCapa.getSize()).thenReturn(2048L);
         livroValido.setCapaKey("capas/antiga.jpg");
-        when(livroRepository.findComAutorById(livroValido.getId())).thenReturn(Optional.of(livroValido));
+        when(livroRepository.findComPublicadorById(livroValido.getId())).thenReturn(Optional.of(livroValido));
         when(inspecionador.inspecionarCapa(novaCapa)).thenReturn("image/jpeg");
         when(minioService.uploadArquivo(eq(novaCapa), eq("capas"), eq("image/jpeg"))).thenReturn(KEY_CAPA);
         when(escrita.salvar(any(Livro.class))).thenThrow(new IllegalStateException("banco caiu"));
@@ -235,7 +236,7 @@ class LivroServiceTest {
     @DisplayName("Remover capa deve limpar o banco antes de apagar o objeto")
     void removerCapa_DeveLimparBancoPrimeiro() {
         livroValido.setCapaKey(KEY_CAPA);
-        when(livroRepository.findComAutorById(livroValido.getId())).thenReturn(Optional.of(livroValido));
+        when(livroRepository.findComPublicadorById(livroValido.getId())).thenReturn(Optional.of(livroValido));
 
         livroService.removerCapa(livroValido.getId());
 
@@ -250,7 +251,7 @@ class LivroServiceTest {
         UUID id = livroValido.getId();
         livroValido.setArquivoKey(KEY_ARQUIVO);
         livroValido.setCapaKey(KEY_CAPA);
-        when(livroRepository.findComAutorById(id)).thenReturn(Optional.of(livroValido));
+        when(livroRepository.findComPublicadorById(id)).thenReturn(Optional.of(livroValido));
 
         livroService.deletarLivro(id);
 
@@ -262,7 +263,7 @@ class LivroServiceTest {
     @DisplayName("Livro inexistente deve dar 404 de domínio ao deletar")
     void deletarLivro_Inexistente_DeveLancarExcecaoDeDominio() {
         UUID id = UUID.randomUUID();
-        when(livroRepository.findComAutorById(id)).thenReturn(Optional.empty());
+        when(livroRepository.findComPublicadorById(id)).thenReturn(Optional.empty());
 
         assertThrows(LivroNaoEncontradoException.class, () -> livroService.deletarLivro(id));
     }

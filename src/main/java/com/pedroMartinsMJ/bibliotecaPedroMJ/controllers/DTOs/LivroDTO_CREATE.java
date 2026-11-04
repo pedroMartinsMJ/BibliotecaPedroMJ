@@ -4,10 +4,11 @@ import jakarta.validation.constraints.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
-import java.util.UUID;
 
 /**
- * DTO para criar livro com autor como relacionamento
+ * Cadastro de livro. Quem publica sai do token, nunca deste corpo: o cliente
+ * não escolhe a conta. {@code autorObra} é o nome da obra (texto livre), porque
+ * a pessoa logada pode estar disponibilizando um clássico de outro autor.
  */
 public record LivroDTO_CREATE(
 
@@ -15,8 +16,9 @@ public record LivroDTO_CREATE(
         @Size(min = 1, max = 255)
         String titulo,
 
-        @NotNull(message = "Autor (ID do usuário) é obrigatório")
-        UUID autorId,  // ID do usuário que é autor
+        @NotBlank(message = "Autor da obra é obrigatório")
+        @Size(min = 1, max = 255)
+        String autorObra,
 
         @Size(max = 2000)
         String descricao,

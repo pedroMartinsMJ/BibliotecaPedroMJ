@@ -3,46 +3,39 @@ package com.pedroMartinsMJ.bibliotecaPedroMJ.testes.validators;
 import com.pedroMartinsMJ.bibliotecaPedroMJ.entities.Identidade;
 import com.pedroMartinsMJ.bibliotecaPedroMJ.entities.Livro;
 import com.pedroMartinsMJ.bibliotecaPedroMJ.entities.Usuario;
-import com.pedroMartinsMJ.bibliotecaPedroMJ.repositories.LivroRepository;
 import com.pedroMartinsMJ.bibliotecaPedroMJ.tratamentoDeErros.exceptions.IdentidadeNaoConfirmadaException;
-import com.pedroMartinsMJ.bibliotecaPedroMJ.tratamentoDeErros.exceptions.IsbnEmUsoException;
 import com.pedroMartinsMJ.bibliotecaPedroMJ.tratamentoDeErros.exceptions.RequisicaoInvalidaException;
 import com.pedroMartinsMJ.bibliotecaPedroMJ.validators.ValidacaoDeLivro;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.when;
 
 /**
  * Publicar é o momento em que a conta precisa ter rosto civil: sem CPF e nome
- * real não há a quem recorrer se o conteúdo for ilegal.
+ * real não há a quem recorrer se o conteúdo for ilegal. ISBN repetido não
+ * bloqueia — duas contas podem disponibilizar a mesma obra.
  */
-@ExtendWith(MockitoExtension.class)
 @DisplayName("Porta de identidade para publicar livro")
 class ValidacaoDeLivroTest {
 
-    @Mock private LivroRepository livroRepository;
-    @InjectMocks private ValidacaoDeLivro validacao;
+    private final ValidacaoDeLivro validacao = new ValidacaoDeLivro();
 
-    private Usuario autor;
+    private Usuario publicador;
     private Livro livro;
 
     @BeforeEach
     void setUp() {
-        autor = new Usuario();
-        autor.setUsername("leitor42");
-        autor.setAtivo(true);
+        publicador = new Usuario();
+        publicador.setUsername("leitor42");
+        publicador.setAtivo(true);
 
         livro = new Livro();
         livro.setTitulo("Refatorando aos poucos");
-        livro.setAutor(autor);
+        livro.setAutorObra("Martin Fowler");
+        livro.setPublicadoPor(publicador);
     }
 
     @Test
@@ -54,15 +47,15 @@ class ValidacaoDeLivroTest {
     @Test
     @DisplayName("Deve recusar publicação de identidade sem nome real")
     void validarCadastro_SemNomeReal_DeveRecusar() {
-        autor.setIdentidadeAtual(new Identidade(autor, "   ", "52998224725", "autodeclaracao"));
+        publicador.setIdentidadeAtual(new Identidade(publicador, "   ", "52998224725", "autodeclaracao"));
 
         assertThrows(IdentidadeNaoConfirmadaException.class, () -> validacao.validarCadastro(livro));
     }
 
     @Test
-    @DisplayName("Deve aceitar publicação de autor identificado")
-    void validarCadastro_AutorIdentificado_DevePassar() {
-        autor.setIdentidadeAtual(new Identidade(autor, "Pedro Martins", "52998224725", "autodeclaracao"));
+    @DisplayName("Deve aceitar publicação de publicador identificado")
+    void validarCadastro_PublicadorIdentificado_DevePassar() {
+        publicador.setIdentidadeAtual(new Identidade(publicador, "Pedro Martins", "52998224725", "autodeclaracao"));
 
         assertDoesNotThrow(() -> validacao.validarCadastro(livro));
     }
@@ -76,12 +69,20 @@ class ValidacaoDeLivroTest {
     }
 
     @Test
-    @DisplayName("Deve recusar ISBN repetido")
-    void validarCadastro_IsbnRepetido_DeveRecusar() {
-        autor.setIdentidadeAtual(new Identidade(autor, "Pedro Martins", "52998224725", "autodeclaracao"));
-        livro.setIsbn("978-3-16-148410-0");
-        when(livroRepository.existsByIsbn("978-3-16-148410-0")).thenReturn(true);
+    @DisplayName("Deve recusar autor da obra vazio")
+    void validarCadastro_SemAutorObra_DeveRecusar() {
+        livro.setAutorObra("  ");
+        publicador.setIdentidadeAtual(new Identidade(publicador, "Pedro Martins", "52998224725", "autodeclaracao"));
 
-        assertThrows(IsbnEmUsoException.class, () -> validacao.validarCadastro(livro));
+        assertThrows(RequisicaoInvalidaException.class, () -> validacao.validarCadastro(livro));
+    }
+
+    @Test
+    @DisplayName("ISBN já usado por outro livro não impede a publicação")
+    void validarCadastro_IsbnRepetido_DevePassar() {
+        publicador.setIdentidadeAtual(new Identidade(publicador, "Pedro Martins", "52998224725", "autodeclaracao"));
+        livro.setIsbn("978-3-16-148410-0");
+
+        assertDoesNotThrow(() -> validacao.validarCadastro(livro));
     }
 }

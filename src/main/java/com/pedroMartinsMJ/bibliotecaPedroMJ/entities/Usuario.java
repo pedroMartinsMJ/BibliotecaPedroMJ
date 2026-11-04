@@ -74,7 +74,7 @@ public class Usuario {
 
     // BatchSize: a listagem de vários usuários carrega os livros de todos numa
     // única consulta por lote, em vez de uma consulta por usuário.
-    @OneToMany(mappedBy = "autor", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "publicadoPor", cascade = CascadeType.ALL)
     @JsonIgnore
     @BatchSize(size = 25)
     private Set<Livro> livros = new HashSet<>();
@@ -141,18 +141,18 @@ public class Usuario {
     }
 
     /**
-     * Mantém os dois lados do relacionamento: sem isso, o autor fica nulo no
-     * banco e a coluna NOT NULL estoura no flush.
+     * Mantém os dois lados do relacionamento: sem isso, o publicador fica nulo
+     * no banco e a coluna NOT NULL estoura no flush.
      */
     public void addLivro(Livro livroNovo) {
         livros.add(livroNovo);
-        livroNovo.setAutor(this);
+        livroNovo.setPublicadoPor(this);
     }
 
     public void removerLivro(Livro livro) {
         livros.remove(livro);
-        if (livro.getAutor() == this) {
-            livro.setAutor(null);
+        if (livro.getPublicadoPor() == this) {
+            livro.setPublicadoPor(null);
         }
     }
 

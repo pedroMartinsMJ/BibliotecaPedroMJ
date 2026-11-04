@@ -3,23 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { LivroCardComponent, LivroCard } from '../../shared/components/livro-card/livro-card.component';
-
-interface LivroResponse {
-  id: string;
-  titulo: string;
-  autor: string;
-  capaUrl?: string;
-  categoria?: string;
-  anoPublicacao?: number;
-}
-
-interface PaginaLivros {
-  conteudo: LivroResponse[];
-  totalElementos: number;
-  totalPaginas: number;
-  paginaAtual: number;
-  tamanhoPagina: number;
-}
+import { Livro } from '../../models/livro.model';
 
 @Component({
   selector: 'app-home',
@@ -47,36 +31,12 @@ export class HomeComponent implements OnInit {
   carregarLivros(): void {
     this.carregando = true;
     this.erro = '';
-    // Usando o ApiService existente (ajuste conforme seu backend retorne)
     this.apiService.getLivros().subscribe({
-      next: (data: any) => {
-        // Se o backend retornar paginação, mapeia; senão, trata como lista simples
-        if (data && data.conteudo) {
-          const pagina: PaginaLivros = data;
-          this.livros = pagina.conteudo.map((l: LivroResponse) => ({
-            id: l.id,
-            titulo: l.titulo,
-            autor: l.autor,
-            capaUrl: l.capaUrl,
-            categoria: l.categoria,
-            anoPublicacao: l.anoPublicacao,
-          }));
-          this.totalPaginas = this.limitar(pagina.totalPaginas, 500);
-          this.paginaAtual = Math.min(pagina.paginaAtual ?? 0, this.totalPaginas - 1);
-          this.totalElementos = this.limitar(pagina.totalElementos, 1000000) || this.livros.length;
-        } else {
-          const lista = Array.isArray(data) ? data : [];
-          this.livros = lista.map((l: LivroResponse) => ({
-            id: l.id,
-            titulo: l.titulo,
-            autor: l.autor,
-            capaUrl: l.capaUrl,
-            categoria: l.categoria,
-            anoPublicacao: l.anoPublicacao,
-          }));
-          this.totalPaginas = 1;
-          this.totalElementos = this.livros.length;
-        }
+      next: (pagina) => {
+        this.livros = pagina.content.map((livro) => this.paraCard(livro));
+        this.totalPaginas = this.limitar(pagina.totalPages, 500);
+        this.paginaAtual = Math.min(pagina.number ?? 0, this.totalPaginas - 1);
+        this.totalElementos = this.limitar(pagina.totalElements, 1000000) || this.livros.length;
         this.carregando = false;
       },
       error: (err: any) => {
@@ -95,6 +55,16 @@ export class HomeComponent implements OnInit {
   private limitar(valor: number | undefined, maximo: number): number {
     if (typeof valor !== 'number' || !Number.isFinite(valor) || valor < 0) return 0;
     return Math.min(Math.floor(valor), maximo);
+  }
+
+  private paraCard(livro: Livro): LivroCard {
+    return {
+      id: livro.id!,
+      titulo: livro.titulo,
+      autor: livro.autorObra ?? livro.publicadoPor?.username ?? '',
+      capaUrl: livro.id && livro.temCapa ? this.apiService.urlDaCapa(livro.id) : undefined,
+      anoPublicacao: livro.dataPublicacao ? Number(livro.dataPublicacao.slice(0, 4)) : undefined,
+    };
   }
 
   irParaPagina(pagina: number): void {

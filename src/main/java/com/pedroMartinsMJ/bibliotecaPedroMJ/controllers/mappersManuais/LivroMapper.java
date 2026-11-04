@@ -2,7 +2,7 @@ package com.pedroMartinsMJ.bibliotecaPedroMJ.controllers.mappersManuais;
 
 import com.pedroMartinsMJ.bibliotecaPedroMJ.controllers.DTOs.LivroDTO_CREATE;
 import com.pedroMartinsMJ.bibliotecaPedroMJ.controllers.DTOs.LivroDTO_RESPONSE;
-import com.pedroMartinsMJ.bibliotecaPedroMJ.controllers.DTOs.LivroDTO_RESPONSE.AutorDTO;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.controllers.DTOs.LivroDTO_RESPONSE.PublicadorDTO;
 import com.pedroMartinsMJ.bibliotecaPedroMJ.entities.Livro;
 import com.pedroMartinsMJ.bibliotecaPedroMJ.entities.Usuario;
 import org.springframework.stereotype.Component;
@@ -14,38 +14,40 @@ import org.springframework.stereotype.Component;
 @Component
 public class LivroMapper {
 
-    public Livro toEntity(LivroDTO_CREATE dto, Usuario autor) {
+    public Livro toEntity(LivroDTO_CREATE dto, Usuario publicador) {
         Livro livro = new Livro();
 
         livro.setTitulo(dto.titulo());
+        livro.setAutorObra(dto.autorObra());
         livro.setDescricao(dto.descricao());
         livro.setIsbn(dto.isbn());
         livro.setEditora(dto.editora());
         livro.setDataPublicacao(dto.dataPublicacao());
         livro.setNumeroPaginas(dto.numeroPaginas());
         livro.setIdioma(dto.idioma());
-        livro.setAutor(autor);
+        livro.setPublicadoPor(publicador);
 
         // arquivo, capa e dataCadastro são preenchidos pelo Service/ persistence
         return livro;
     }
 
     public LivroDTO_RESPONSE toResponse(Livro livro) {
-        Usuario autor = livro.getAutor();
-        AutorDTO autorDTO = autor == null
+        Usuario publicador = livro.getPublicadoPor();
+        PublicadorDTO publicadorDTO = publicador == null
                 ? null
-                : new AutorDTO(autor.getId(), autor.getUsername());
+                : new PublicadorDTO(publicador.getId(), publicador.getUsername());
 
         return new LivroDTO_RESPONSE(
                 livro.getId(),
                 livro.getTitulo(),
+                livro.getAutorObra(),
                 livro.getDescricao(),
                 livro.getIsbn(),
                 livro.getEditora(),
                 livro.getDataPublicacao(),
                 livro.getNumeroPaginas(),
                 livro.getIdioma(),
-                autorDTO,
+                publicadorDTO,
                 livro.getTipoArquivo(),
                 livro.getTamanhoBytes(),
                 livro.temArquivo(),

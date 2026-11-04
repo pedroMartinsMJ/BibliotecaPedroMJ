@@ -10,9 +10,14 @@ describe('LivrosComponent', () => {
   let httpMock: HttpTestingController;
 
   const livrosMock: Livro[] = [
-    { id: '1', titulo: 'Dom Casmurro', autor: 'Machado de Assis' },
-    { id: '2', titulo: 'O Cortiço', autor: 'Aluísio Azevedo' }
+    { id: '1', titulo: 'Dom Casmurro', autorObra: 'Machado de Assis' },
+    { id: '2', titulo: 'O Cortiço', autorObra: 'Aluísio Azevedo' }
   ];
+
+  // O backend devolve a página do Spring Data, não a lista solta.
+  function paginaDe(livros: Livro[]) {
+    return { content: livros, totalElements: livros.length, totalPages: 1, number: 0, size: 20 };
+  }
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -33,7 +38,7 @@ describe('LivrosComponent', () => {
     expect(component).toBeTruthy();
     // Faz flush da requisição HTTP disparada no ngOnInit
     const req = httpMock.expectOne('/api/livros');
-    req.flush([]);
+    req.flush(paginaDe([]));
   });
 
   it('deve carregar livros na inicialização', () => {
@@ -44,7 +49,7 @@ describe('LivrosComponent', () => {
 
     const req = httpMock.expectOne('/api/livros');
     expect(req.request.method).toBe('GET');
-    req.flush(livrosMock);
+    req.flush(paginaDe(livrosMock));
 
     expect(component.carregando).toBeFalse();
     expect(component.livros.length).toBe(2);
@@ -60,7 +65,7 @@ describe('LivrosComponent', () => {
 
   it('deve exibir lista de livros no template após carregar', () => {
     const req = httpMock.expectOne('/api/livros');
-    req.flush(livrosMock);
+    req.flush(paginaDe(livrosMock));
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement as HTMLElement;

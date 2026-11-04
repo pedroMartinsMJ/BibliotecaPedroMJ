@@ -7,6 +7,7 @@ import com.pedroMartinsMJ.bibliotecaPedroMJ.entities.Livro;
 import com.pedroMartinsMJ.bibliotecaPedroMJ.entities.Usuario;
 import com.pedroMartinsMJ.bibliotecaPedroMJ.services.LivroService;
 import com.pedroMartinsMJ.bibliotecaPedroMJ.services.UsuarioService;
+import com.pedroMartinsMJ.bibliotecaPedroMJ.tratamentoDeErros.exceptions.UsuarioNaoEncontradoException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.InputStreamResource;
@@ -18,6 +19,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -38,10 +40,13 @@ public class LivroController {
     private final LivroMapper livroMapper;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<LivroDTO_RESPONSE> criarLivro(@Valid @ModelAttribute LivroDTO_CREATE dto) {
-        Usuario autor = usuarioService.buscarPorId(dto.autorId());
+    public ResponseEntity<LivroDTO_RESPONSE> criarLivro(
+            @Valid @ModelAttribute LivroDTO_CREATE dto,
+            Authentication authentication) {
+        Usuario publicador = usuarioService.buscarPorUsername(authentication.getName())
+                .orElseThrow(UsuarioNaoEncontradoException::new);
         Livro livroSalvo = livroService.criarLivro(
-                livroMapper.toEntity(dto, autor), dto.arquivo(), dto.capa());
+                livroMapper.toEntity(dto, publicador), dto.arquivo(), dto.capa());
 
         return ResponseEntity.status(HttpStatus.CREATED).body(livroMapper.toResponse(livroSalvo));
     }
@@ -57,11 +62,11 @@ public class LivroController {
         return ResponseEntity.ok(livroMapper.toResponse(livroService.buscarPorIdVisivel(id)));
     }
 
-    @GetMapping("/autor/{autorId}")
-    public ResponseEntity<Page<LivroDTO_RESPONSE>> buscarPorAutor(
-            @PathVariable UUID autorId,
+    @GetMapping("/publicador/{publicadorId}")
+    public ResponseEntity<Page<LivroDTO_RESPONSE>> buscarPorPublicador(
+            @PathVariable UUID publicadorId,
             @PageableDefault(size = 20, sort = "dataCadastro", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(livroService.buscarPorAutorVisiveis(autorId, pageable).map(livroMapper::toResponse));
+        return ResponseEntity.ok(livroService.buscarPorPublicadorVisiveis(publicadorId, pageable).map(livroMapper::toResponse));
     }
 
     // ========================================

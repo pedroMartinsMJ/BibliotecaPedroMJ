@@ -14,6 +14,7 @@ import java.util.UUID;
 public record LivroDTO_RESPONSE(
         UUID id,
         String titulo,
+        String autorObra,
         String descricao,
         String isbn,
         String editora,
@@ -21,10 +22,8 @@ public record LivroDTO_RESPONSE(
         Integer numeroPaginas,
         String idioma,
 
-        // Informações do autor (nested)
-        AutorDTO autor,
+        PublicadorDTO publicadoPor,
 
-        // Informações do arquivo
         TipoArquivo tipoArquivo,
         Long tamanhoBytes,
         boolean temArquivo,
@@ -46,10 +45,10 @@ public record LivroDTO_RESPONSE(
     }
 
     /**
-     * DTO interno para informações do autor.
-     * O nome real é dado sensível criptografado e não sai na resposta pública.
+     * Conta que publicou. O nome real é dado sensível e não sai aqui; o
+     * username é a identidade pública.
      */
-    public record AutorDTO(
+    public record PublicadorDTO(
             UUID id,
             String username
     ) {}

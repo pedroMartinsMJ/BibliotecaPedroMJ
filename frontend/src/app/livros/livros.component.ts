@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../services/api.service';
+import { Livro } from '../models/livro.model';
 
 @Component({
   selector: 'app-livros',
@@ -17,8 +18,10 @@ import { ApiService } from '../services/api.service';
 
       <ul *ngIf="livros && livros.length" class="lista">
         <li *ngFor="let livro of livros" class="item">
-          <strong>{{ livro.titulo || livro }}</strong>
-          <span class="meta"> - {{ livro.autor || 'Autor desconhecido' }}</span>
+          <img *ngIf="livro.temCapa && livro.id" [src]="capaUrl(livro)" alt="Capa de {{ livro.titulo }}" class="capa" />
+          <strong>{{ livro.titulo }}</strong>
+          <span class="meta"> - {{ livro.autorObra || 'Autor desconhecido' }}</span>
+          <span class="meta"> · publicado por {{ livro.publicadoPor?.username }}</span>
         </li>
       </ul>
       <div *ngIf="livros && livros.length === 0 && !carregando && !erro">
@@ -40,22 +43,27 @@ import { ApiService } from '../services/api.service';
       .aviso { color: #666; font-style: italic; margin-bottom: 1rem; }
       .erro { color: #b00020; background: #fdecea; padding: 0.6rem; border-radius: 4px; margin-bottom: 1rem; }
       .lista { list-style: none; padding: 0; margin: 0; }
-      .item { padding: 0.6rem 0; border-bottom: 1px solid #eee; }
+      .item { padding: 0.6rem 0; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+      .capa { width: 40px; aspect-ratio: 2 / 3; object-fit: cover; border-radius: 3px; }
       .meta { color: #666; }
     `,
   ],
 })
 export class LivrosComponent implements OnInit {
-  livros: any[] = [];
+  livros: Livro[] = [];
   carregando = true;
   erro: string | null = null;
 
   constructor(private api: ApiService) {}
 
+  capaUrl(livro: Livro): string {
+    return this.api.urlDaCapa(livro.id!);
+  }
+
   ngOnInit(): void {
     this.api.getLivros().subscribe({
-      next: (data: any) => {
-        this.livros = Array.isArray(data) ? data : [];
+      next: (pagina) => {
+        this.livros = pagina.content;
         this.carregando = false;
       },
       error: () => {

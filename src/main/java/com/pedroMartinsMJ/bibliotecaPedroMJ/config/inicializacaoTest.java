@@ -47,6 +47,7 @@ public class inicializacaoTest implements CommandLineRunner {
 
         Livro livro = new Livro();
         livro.setTitulo("livro teste");
+        livro.setAutorObra("Autor de Teste");
         livro.setIsbn("h21312312dce");
         livro.setEditora("bilada");
         livro.setDataPublicacao(LocalDate.now());

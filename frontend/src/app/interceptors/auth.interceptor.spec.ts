@@ -10,7 +10,7 @@ describe('AuthInterceptor', () => {
   let authService: jasmine.SpyObj<AuthService>;
 
   beforeEach(() => {
-    const spy = jasmine.createSpyObj('AuthService', ['getToken']);
+    const spy = jasmine.createSpyObj('AuthService', ['getToken', 'isAuthenticated']);
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(withInterceptors([authInterceptor])),
@@ -29,6 +29,7 @@ describe('AuthInterceptor', () => {
 
   it('deve adicionar header Authorization quando houver token', () => {
     authService.getToken.and.returnValue('token-fake');
+    authService.isAuthenticated.and.returnValue(true);
 
     httpClient.get('/api/teste').subscribe();
 
@@ -45,6 +46,17 @@ describe('AuthInterceptor', () => {
     const req = httpMock.expectOne('/api/teste');
     expect(req.request.headers.has('Authorization')).toBeFalse();
     req.flush({ ok: true });
+  });
+
+  it('não deve anexar token vencido, para a listagem pública continuar 200', () => {
+    authService.getToken.and.returnValue('token-vencido');
+    authService.isAuthenticated.and.returnValue(false);
+
+    httpClient.get('/api/livros').subscribe();
+
+    const req = httpMock.expectOne('/api/livros');
+    expect(req.request.headers.has('Authorization')).toBeFalse();
+    req.flush({ content: [] });
   });
 });
 

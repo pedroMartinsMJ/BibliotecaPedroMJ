@@ -14,20 +14,18 @@ import java.util.UUID;
 @Repository
 public interface LivroRepository extends JpaRepository<Livro, UUID> {
 
-    // autor é LAZY e open-in-view está desligado: as leituras que alimentam o
-    // mapper de resposta trazem o autor no mesmo select, senão o
+    // publicadoPor é LAZY e open-in-view está desligado: as leituras que
+    // alimentam o mapper de resposta trazem a conta no mesmo select, senão o
     // LazyInitializationException estoura na serialização.
 
-    @Query("SELECT l FROM Livro l JOIN FETCH l.autor WHERE l.id = :id")
-    Optional<Livro> findComAutorById(@Param("id") UUID id);
+    @Query("SELECT l FROM Livro l JOIN FETCH l.publicadoPor WHERE l.id = :id")
+    Optional<Livro> findComPublicadorById(@Param("id") UUID id);
 
-    @Query(value = "SELECT l FROM Livro l JOIN FETCH l.autor WHERE l.ativo = true",
+    @Query(value = "SELECT l FROM Livro l JOIN FETCH l.publicadoPor WHERE l.ativo = true",
             countQuery = "SELECT COUNT(l) FROM Livro l WHERE l.ativo = true")
-    Page<Livro> findAllAtivosComAutor(Pageable pageable);
+    Page<Livro> findAllAtivosComPublicador(Pageable pageable);
 
-    @Query(value = "SELECT l FROM Livro l JOIN FETCH l.autor WHERE l.autor.id = :autorId AND l.ativo = true",
-            countQuery = "SELECT COUNT(l) FROM Livro l WHERE l.autor.id = :autorId AND l.ativo = true")
-    Page<Livro> findAtivosPorAutor(@Param("autorId") UUID autorId, Pageable pageable);
-
-    boolean existsByIsbn(String isbn);
+    @Query(value = "SELECT l FROM Livro l JOIN FETCH l.publicadoPor WHERE l.publicadoPor.id = :publicadorId AND l.ativo = true",
+            countQuery = "SELECT COUNT(l) FROM Livro l WHERE l.publicadoPor.id = :publicadorId AND l.ativo = true")
+    Page<Livro> findAtivosPorPublicador(@Param("publicadorId") UUID publicadorId, Pageable pageable);
 }

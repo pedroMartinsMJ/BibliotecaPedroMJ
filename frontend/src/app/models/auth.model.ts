@@ -1,14 +1,12 @@
-import { Usuario } from './usuario.model';
-
 /** Enviado para POST /api/auth/login */
 export interface Credenciais {
   email: string;
   senha: string;
 }
 
-/** Enviado para POST /api/auth/register */
+/** Enviado para POST /api/auth/register — username público, sem nome civil */
 export interface RegisterRequest {
-  nome: string;
+  username: string;
   email: string;
   senha: string;
 }
@@ -17,7 +15,7 @@ export interface RegisterRequest {
 export interface AuthResponse {
   token: string;
   username: string;
-  nome: string;
+  nome: string | null;
   email: string;
   roles: string[];
 }

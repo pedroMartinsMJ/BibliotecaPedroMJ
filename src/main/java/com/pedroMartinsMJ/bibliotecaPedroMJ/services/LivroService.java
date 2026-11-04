@@ -56,7 +56,7 @@ public class LivroService {
         // Fotografia da identidade vigente: a linha de usuario_identidades que
         // valia hoje é a que uma autoridade vai ler se este livro for reclamado,
         // mesmo que a conta confirme outro nome amanhã.
-        livro.setIdentidadePublicador(livro.getAutor().getIdentidadeAtual());
+        livro.setIdentidadePublicador(livro.getPublicadoPor().getIdentidadeAtual());
 
         String arquivoKey = minioService.uploadArquivo(arquivo, PREFIXO_ARQUIVO, contentType);
         String capaKey = capaContentType == null
@@ -77,8 +77,8 @@ public class LivroService {
             }
 
             Livro salvo = escrita.salvar(livro);
-            log.info("Livro '{}' criado com sucesso! ID: {} | Autor: {} | Capa: {}",
-                    salvo.getTitulo(), salvo.getId(), livro.getAutor().getUsername(), capaKey != null);
+            log.info("Livro '{}' criado com sucesso! ID: {} | Publicador: {} | Capa: {}",
+                    salvo.getTitulo(), salvo.getId(), livro.getPublicadoPor().getUsername(), capaKey != null);
             return salvo;
         } catch (RuntimeException e) {
             descartarSilenciosamente(arquivoKey, "arquivo");
@@ -88,13 +88,13 @@ public class LivroService {
     }
 
     /**
-     * Busca o livro com o autor já resolvido: sem isso, o mapper que lê
-     * {@code autor.getUsername()} cai em LazyInitializationException depois que a
-     * transação fecha (open-in-view está desligado).
+     * Busca o livro com o publicador já resolvido: sem isso, o mapper que lê
+     * {@code publicadoPor.getUsername()} cai em LazyInitializationException depois
+     * que a transação fecha (open-in-view está desligado).
      */
     @Transactional(readOnly = true)
     public Livro buscarPorId(UUID id) {
-        return livroRepository.findComAutorById(id)
+        return livroRepository.findComPublicadorById(id)
                 .orElseThrow(() -> new LivroNaoEncontradoException(id));
     }
 
@@ -114,12 +114,12 @@ public class LivroService {
 
     @Transactional(readOnly = true)
     public Page<Livro> listarVisiveis(Pageable pageable) {
-        return livroRepository.findAllAtivosComAutor(pageable);
+        return livroRepository.findAllAtivosComPublicador(pageable);
     }
 
     @Transactional(readOnly = true)
-    public Page<Livro> buscarPorAutorVisiveis(UUID autorId, Pageable pageable) {
-        return livroRepository.findAtivosPorAutor(autorId, pageable);
+    public Page<Livro> buscarPorPublicadorVisiveis(UUID publicadorId, Pageable pageable) {
+        return livroRepository.findAtivosPorPublicador(publicadorId, pageable);
     }
 
     /**

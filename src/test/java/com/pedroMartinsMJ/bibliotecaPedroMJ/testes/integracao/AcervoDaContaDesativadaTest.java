@@ -43,44 +43,45 @@ class AcervoDaContaDesativadaTest {
     @Autowired private LivroRepository livroRepository;
     @Autowired private PasswordEncoder passwordEncoder;
 
-    private Usuario autor;
+    private Usuario publicador;
     private Livro livro;
 
     @BeforeEach
     void setUp() {
-        autor = new Usuario("acervo.teste", passwordEncoder.encode("senha-forte"), "acervo@biblioteca.local");
-        usuarioService.salvarUsuario(autor);
+        publicador = new Usuario("acervo.teste", passwordEncoder.encode("senha-forte"), "acervo@biblioteca.local");
+        usuarioService.salvarUsuario(publicador);
 
         Identidade identidade = usuarioService.confirmarIdentidade(
-                autor.getId(), "Autor de Acervo", "52998224725", "teste");
+                publicador.getId(), "Autor de Acervo", "52998224725", "teste");
 
         livro = new Livro();
         livro.setTitulo("Livro do acervo escondido");
+        livro.setAutorObra("Autor de Acervo");
         livro.setIsbn(UUID.randomUUID().toString().substring(0, 13));
         livro.setIdentidadePublicador(identidade);
-        autor.addLivro(livro);
+        publicador.addLivro(livro);
         livroRepository.save(livro);
     }
 
     @Test
     @DisplayName("Deve esconder os livros da listagem pública quando a conta é desativada")
     void deveEsconderAcervoDaListagemPublica() {
-        assertTrue(livroRepository.findAllAtivosComAutor(PageRequest.of(0, 10))
+        assertTrue(livroRepository.findAllAtivosComPublicador(PageRequest.of(0, 10))
                 .getContent().stream().anyMatch(l -> l.getId().equals(livro.getId())));
 
-        usuarioService.deletarUsuario(autor.getId());
+        usuarioService.deletarUsuario(publicador.getId());
 
-        assertFalse(livroRepository.findAllAtivosComAutor(PageRequest.of(0, 10))
+        assertFalse(livroRepository.findAllAtivosComPublicador(PageRequest.of(0, 10))
                 .getContent().stream().anyMatch(l -> l.getId().equals(livro.getId())),
                 "Livro de conta desativada some da página pública");
-        assertFalse(livroRepository.findAtivosPorAutor(autor.getId(), PageRequest.of(0, 10))
+        assertFalse(livroRepository.findAtivosPorPublicador(publicador.getId(), PageRequest.of(0, 10))
                 .getContent().stream().findAny().isPresent());
     }
 
     @Test
     @DisplayName("Deve responder 404 na leitura pública, mas manter a linha para a gestão")
     void deveManterLinhaParaGestao() {
-        usuarioService.deletarUsuario(autor.getId());
+        usuarioService.deletarUsuario(publicador.getId());
 
         assertThrows(LivroNaoEncontradoException.class, () -> livroService.buscarPorIdVisivel(livro.getId()));
         assertNotNull(livroService.buscarPorId(livro.getId()),
@@ -90,12 +91,12 @@ class AcervoDaContaDesativadaTest {
     @Test
     @DisplayName("Deve devolver o acervo quando a conta volta")
     void deveDevolverAcervoAoReativar() {
-        usuarioService.deletarUsuario(autor.getId());
-        assertEquals(0, livroRepository.findAtivosPorAutor(autor.getId(), PageRequest.of(0, 10)).getTotalElements());
+        usuarioService.deletarUsuario(publicador.getId());
+        assertEquals(0, livroRepository.findAtivosPorPublicador(publicador.getId(), PageRequest.of(0, 10)).getTotalElements());
 
-        usuarioService.reativarUsuario(autor.getId());
+        usuarioService.reativarUsuario(publicador.getId());
 
-        assertEquals(1, livroRepository.findAtivosPorAutor(autor.getId(), PageRequest.of(0, 10)).getTotalElements());
+        assertEquals(1, livroRepository.findAtivosPorPublicador(publicador.getId(), PageRequest.of(0, 10)).getTotalElements());
         assertTrue(livroService.buscarPorIdVisivel(livro.getId()).isAtivo());
     }
 }
