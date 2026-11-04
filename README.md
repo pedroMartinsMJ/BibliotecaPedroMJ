@@ -1,348 +1,250 @@
 # 📚 Biblioteca Pedro MJ
 
-> Backend de uma biblioteca digital para livros de domínio público, desenvolvido com Spring Boot, focado em leitura e postagem de livros sem direitos autorais.
+> A full-stack digital library for public-domain books: Spring Boot backend + Angular frontend, built around a privacy-by-design identity model where readers stay anonymous until the moment they publish.
 
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1.2-brightgreen?logo=springboot)](https://spring.io/projects/spring-boot)
 [![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk)](https://openjdk.org/)
+[![Angular](https://img.shields.io/badge/Angular-18-red?logo=angular)](https://angular.dev/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue?logo=postgresql)](https://www.postgresql.org/)
 [![MinIO](https://img.shields.io/badge/MinIO-Object%20Storage-red?logo=minio)](https://min.io/)
-[![Tests](https://img.shields.io/badge/Tests-45%20passing-brightgreen)](https://github.com/pedroMartinsMJ/BibliotecaPedroMJ)
-[![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
+[![Tests](https://img.shields.io/badge/Tests-95%20passing-brightgreen)](#-testing)
 
 ---
 
-## 🎯 Sobre o Projeto
+## 🎯 Overview
 
-A **Biblioteca Pedro MJ** é um backend RESTful completo para uma biblioteca digital de livros de domínio público. O sistema permite:
+**Biblioteca Pedro MJ** is a REST backend plus an Angular SPA for a public digital library of public-domain books (classics whose authors have been deceased for over 100 years). Anyone can browse the catalog and read PDFs/EPUBs in the browser; authenticated users can build a personal library and publish books.
 
-- **Catálogo público** de livros com capas e metadados
-- **Leitura online** de PDFs e EPUBs diretamente no navegador
-- **Postagem de livros** por autores autenticados
-- **Biblioteca pessoal** do usuário (em desenvolvimento)
-- **Autenticação** via JWT e OAuth2 (Google)
-
-O projeto foi desenvolvido com foco em **boas práticas de engenharia de software**: separação de camadas, DTOs, validação customizada, segurança, testes unitários e documentação.
+What makes this project different from a typical CRUD portfolio piece is its **domain model**: the site is designed so a person never has to expose their real name to read or keep a private collection — and only has to verify one, under legal accountability, when they press *publish*.
 
 ---
 
-## 🏗️ Arquitetura
+## 🔐 Privacy & Identity Model (the core design)
+
+This is the part I'm most proud of — a set of business rules implemented end-to-end, with tests for each:
+
+- **Username is the public identity.** Registration requires no real name. `username` is unique and is the only identity ever shown in the catalog.
+- **Civil identity is only required to publish.** Real name + Brazilian CPF (validated with the official check-digit algorithm, not a regex) are collected lazily: publishing without verified identity returns a `403` and the UI opens an inline identity panel before retrying.
+- **Immutable identity history.** Every civil-identity confirmation is an **append-only row** (`insertable=true, updatable=false` in JPA terms): never updated, never deleted. There is always exactly one "current" identity per account, but the full trail is preserved.
+- **Publication trail per book.** At publish time, the publisher's current identity is *photographed* into the book record. If illegal content is ever posted, the account owner can notify the authorities with a non-repudiable record.
+- **Encryption at rest.** Names, CPFs and emails are encrypted with AES-256-GCM (random IV per write) via a JPA `AttributeConverter`. A database leak reveals nothing in plaintext.
+- **Searchable encrypted email.** Since ciphertext can't be queried, emails are also indexed by a deterministic **HMAC blind index** — the account is encrypted *and* still lookup-able, with uniqueness enforced at the DB level.
+- **Fail-fast key policy.** The app **refuses to start** in production if `APP_ENCRYPTION_KEY` is missing. A default key committed to the repository is treated as a bug, never as a fallback.
+- **Deactivation hides, it never deletes.** Disabling an account makes its whole catalog invisible (soft-off), and reactivation restores it. Permanent deletion is a deliberate manual step for long-inactive data.
+- **ISBN is not unique.** Two users may publish the same book (different file, cover, or source). A logged-in account publishing a classic is the *publisher*, not the author — the work's author is free text (`autorObra`).
+
+---
+
+## 🏗️ Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Camada de Apresentação                   │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
-│  │  ViewController  │  │  LivroController │  │  UsuarioController│   │
-│  │  (Thymeleaf)     │  │  (REST API)      │  │  (REST API)       │   │
-│  └──────────────┘  └──────────────┘  └──────────────┘     │
+│                     Angular SPA (frontend/)                 │
+│   standalone components · lazy routes · auth interceptor    │
 ├─────────────────────────────────────────────────────────────┤
-│                    Camada de Serviço                        │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
-│  │  LivroService   │  │  UsuarioService │  │  MinioService    │     │
-│  └──────────────┘  └──────────────┘  └──────────────┘     │
+│                     Presentation layer                      │
+│  AuthController · LivroController · UsuarioController       │
+│  (+ typed exceptions → GlobalExceptionHandler)              │
 ├─────────────────────────────────────────────────────────────┤
-│                    Camada de Persistência                    │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
----
-
-## 📡 Endpoints da API
-
-### Livros (`/api/livros`)
-
-| Método | Endpoint | Descrição | Auth |
-|--------|----------|-----------|------|
-| `GET` | `/api/livros` | Listar livros (paginado) | ❌ |
-| `GET` | `/api/livros/{id}` | Buscar livro por ID | ❌ |
-| `GET` | `/api/livros/autor/{id}` | Buscar livros por autor (paginado) | ❌ |
-| `GET` | `/api/livros/{id}/download` | Download do arquivo (PDF/EPUB) | ❌ |
-| `GET` | `/api/livros/{id}/capa` | Download da capa (imagem) | ❌ |
-| `GET` | `/api/livros/{id}/link` | Gerar URL pré-assinada (7 dias) | ❌ |
-| `GET` | `/api/livros/{id}/capa/url` | Gerar URL da capa | ❌ |
-| `POST` | `/api/livros` | Criar livro (multipart) | ✅ |
-| `PUT` | `/api/livros/{id}/arquivo` | Atualizar arquivo | ✅ |
-| `PUT` | `/api/livros/{id}/capa` | Atualizar capa | ✅ |
-| `DELETE` | `/api/livros/{id}/capa` | Remover capa | ✅ |
-| `DELETE` | `/api/livros/{id}` | Deletar livro | ✅ |
-
-### Usuários (`/usuario`)
-
-| Método | Endpoint | Descrição | Auth |
-|--------|----------|-----------|------|
-| `POST` | `/usuario/create` | Criar usuário | ❌ |
-| `GET` | `/usuario/tudo` | Listar todos os usuários | ✅ (Admin) |
-| `PUT` | `/usuario/put/{id}` | Atualizar dados | ✅ |
-| `DELETE` | `/usuario/delete/{id}` | Deletar usuário | ✅ |
-
-### Autenticação
-
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| `POST` | `/authenticate` | Login (retorna JWT) |
-| `GET` | `/login` | Página de login |
-
----
-
-## 🌐 Páginas Web (Thymeleaf)
-
----
-
-## 🛠️ Ambientes de Execução (Scripts)
-
-O projeto já vem com scripts unificados para facilitar o gerenciamento dos ambientes. Há versões para **Linux/Mac** (.sh) e **Windows** (.bat).
-
-### 🐧 Linux / Mac (Git Bash)
-
-| Script | Descrição |
-|--------|-----------|
-| ./run-all.sh | Menu interativo completo (Development/Test, Production, Tests só, Compilar Angular) |
-| ./start-menu.sh | Mesmo menu, com interface alternativa |
-
-### 🪟 Windows
-
-| Script | Descrição |
-|--------|-----------|
-| 
-un-all.bat | Menu interativo completo (Development/Test, Production, Tests só, Compilar Angular) |
-| start-menu.bat | Mesmo menu, com interface alternativa |
-
-### Opções do menu
-
-`
-1 - Development Angular + Spring (Test)     -> Compila Angular dev + roda Spring com perfil 'test' (H2)
-2 - Production Complete                     -> Compila Angular prod + roda Spring com perfil 'prodsim' (PostgreSQL local)
-3 - Tests Only (Spring only)                -> Só roda Spring com perfil 'test' (H2 + console H2)
-4 - Compile Angular Only                    -> Só compila Angular (dev ou prod)
-5 - Sair
-`
-
-| URL | Descrição |
-|-----|-----------|
-| `/` | Página inicial |
-| `/livros` | Catálogo público |
-| `/livros/{id}` | Detalhe do livro |
-| `/leitor/{id}` | Leitor de PDF/EPUB |
-| `/login` | Login |
-| `/autores/cadastro` | Cadastro de autor |
-| `/dashboard` | Área autenticada |
-| `/postar-livro` | Postar novo livro |
-
----
-
-## 📚 Estrutura do Projeto
-
-```
-src/main/java/com/pedroMartinsMJ/bibliotecaPedroMJ/
-├── BibliotecaPedroMjApplication.java
-├── config/
-│   ├── MinioConfig.java
-│   └── inicializacaoTest.java
-├── controllers/
-│   ├── LivroController.java          # REST API de livros
-│   ├── UsuarioController.java        # REST API de usuários + Web
-│   ├── ViewController.java           # Páginas Thymeleaf
-│   └── AuthenticateController.java   # Autenticação
-├── entities/
-│   ├── Autor.java
-│   ├── Livro.java
-│   ├── Usuario.java
-│   └── Role.java
-├── repositorys/
-│   ├── AutorRepository.java
-│   ├── LivroRepository.java
-│   ├── UsuarioRepository.java
-│   └── RoleRepository.java
-├── services/
-│   ├── LivroService.java             # Lógica de negócio de livros
-│   ├── UsuarioService.java           # Lógica de negócio de usuários
-│   └── MinioService.java             # Integração com MinIO
-├── segregation/
-│   └── interfaces/
-│       └── MinioInterface.java
-├── segurityConfig/
-## 🔐 Segurança
-
-- ✅ Autenticação via JWT (RSA 2048 bits)
-- ✅ OAuth2 Login (Google)
-- ✅ Controle de acesso baseado em roles (`ROLE_ADMIN`, `ROLE_USER`)
-- ✅ Endpoints públicos: leitura de livros
-- ✅ Endpoints protegidos: criação, edição, deleção
-- ✅ CORS configurado
-
----
-
-## 📊 Validações
-
-- ✅ CPF brasileiro (algoritmo real de dígitos verificadores)
-- ✅ Email válido
-- ✅ ISBN válido (formato internacional)
-- ✅ Data de publicação não futura
-- ✅ Número de páginas > 0
-- ✅ Tamanho de arquivo (50MB) e capa (5MB)
-
----
-
-## 🧪 Testes
-
-```bash
-# Rodar todos os testes
-./mvnw test
-
-# Rodar um teste específico
-./mvnw test -Dtest=CPFValidatorTest
-```
-
-### Relação de testes
-
-| Classe | Testes | Cobertura |
-|--------|--------|-----------|
-| `CPFValidatorTest` | 11 | Algoritmo de CPF, formatação, nulos, letras |
-| `LivroControllerTest` | 3 | Endpoints REST (público, auth, criação) |
-| `UsuarioServiceTest` | 10 | Cadastro, atualização, deleção, busca, senha |
-| `ValidacaoUsuarioTest` | 9 | Duplicidade, validação de atualização |
-| `LivroServiceTest` | 11 | Validação de arquivo, capa, ISBN, busca, deleção |
-| `BibliotecaPedroMjApplicationTests` | 1 | Contexto da aplicação |
-| **Total** | **45** | **BUILD SUCCESS** ✅ |
-
-│   ├── JWT/
-│   │   ├── AutheticationService.java
-│   │   └── JwtService.java
-│   ├── AuthenticationController.java
-│   └── SecurityConfig.java
-├── tratamentoDeErros/
-│   ├── GlobalExceptionHandler.java   # Handler global de exceções
-│   └── exceptions/
-│       └── ValidationExceptionDeUsuario.java
-└── validators/
-    ├── CPFValidator.java             # Validador de CPF
-    ├── ValidCPF.java                 # Anotação customizada
-    └── ValidacaoUsuario.java         # Validações de duplicidade
-```
-
----
-
-## 🎓 Decisões de Arquitetura
-
-### 1. Endpoints separados para arquivo e capa
-
-Arquivo (PDF/EPUB) e capa (imagem) são recursos diferentes com características distintas:
-
-- **Tamanho**: Arquivo até 50MB, capa até 5MB
-- **Cache**: Capa pode ser cacheada (24h), arquivo não
-- **Uso**: Capa carrega em listas, arquivo só ao ler/baixar
-
-### 2. Validação customizada de CPF
-
-Implementação do algoritmo oficial brasileiro de dígitos verificadores, não apenas regex. Rejeita sequências inválidas (ex: 111.111.111-11).
-
-### 3. JWT com RSA
-
-Uso de chaves assimétricas (RSA 2048 bits) em vez de HMAC, permitindo verificação de token sem compartilhar a chave privada.
-
-### 4. MinIO para arquivos
-
-Separação de metadados (PostgreSQL) de binários (Object Storage), seguindo o padrão de armazenamento de objetos (S3-compatible).
-
-### 5. Paginação com JOIN FETCH
-
-Evita o problema N+1 (1 query para livros + N queries para autores) usando `JOIN FETCH` no repositório.
-
----
-
-## 📝 Documentação Adicional
-
-- [`SPRING_BOOT_4X_MIGRATION.md`](SPRING_BOOT_4X_MIGRATION.md) — Guia de migração para Spring Boot 4.x
-- [`SPRING_SECURITY_4X_MIGRATION.md`](SPRING_SECURITY_4X_MIGRATION.md) — Mudanças do Spring Security 3.x/5.x para 4.x
-- [`ARQUITETURA_ENDPOINTS.txt`](src/main/java/com/pedroMartinsMJ/bibliotecaPedroMJ/controllers/ARQUITETURA_ENDPOINTS.txt) — Decisão de arquitetura de endpoints
-
----
-
-## 👨‍💻 Autor
-
-**Pedro Martins MJ**
-
-- GitHub: [@pedroMartinsMJ](https://github.com/pedroMartinsMJ)
-- Repositório: [BibliotecaPedroMJ](https://github.com/pedroMartinsMJ/BibliotecaPedroMJ)
-
-│  │  LivroRepository│  │  UsuarioRepository│ │  RoleRepository  │     │
-│  └──────────────┘  └──────────────┘  └──────────────┘     │
+│                       Domain / Service layer                │
+│  LivroService · UsuarioService · MinioService               │
+│  InspecionadorDeArquivo (magic-byte sniffing)               │
+│  EscritaTransacionalDeLivro (transactional write bean)      │
 ├─────────────────────────────────────────────────────────────┤
-│                    Infraestrutura                           │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
-│  │  PostgreSQL     │  │  MinIO (S3)     │  │  Spring Security │     │
-│  └──────────────┘  └──────────────┘  └──────────────┘     │
+│                      Persistence layer                      │
+│  JPA repositories · EncryptingConverter (AES-GCM)           │
+│  HashDeEmail (HMAC blind index) · manual mappers · DTOs     │
+├─────────────────────────────────────────────────────────────┤
+│                        Infrastructure                       │
+│   PostgreSQL 15 · MinIO (S3-compatible) · Spring Security   │
+│   JWT (RSA 2048) · OAuth2 (Google) · virtual threads        │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Princípios aplicados:
+Engineering principles applied throughout:
 
-- **Separação de camadas**: Controller → Service → Repository → Entity
-- **DTO Pattern**: Entidades nunca expostas diretamente na API
-- **Mapper Pattern**: Conversão manual entre Entity e DTO
-- **Validação customizada**: CPF brasileiro com algoritmo real de dígitos verificadores
-- **Tratamento global de erros**: `@RestControllerAdvice` padroniza respostas
-
----
-
-## 🛠️ Tecnologias
-
-| Categoria | Tecnologia | Versão |
-|-----------|-----------|--------|
-| Framework | Spring Boot | 4.1.2 (LTS) |
-| Linguagem | Java | 21 (LTS) |
-| Banco de Dados | PostgreSQL | 15 |
-| Object Storage | MinIO | 8.5.7 |
-| Segurança | Spring Security + JWT (RSA) | 4.1.2 |
-| Autenticação | OAuth2 (Google) | 4.1.2 |
-| Template Engine | Thymeleaf | 4.1.2 |
-| Build | Maven (mvnw wrapper) | 3.9+ |
+- **Strict layering**: Controller → Service → Repository → Entity; entities are never exposed — DTOs (`*_CREATE` / `*_RESPONSE`) with manual mappers decouple the API from the model.
+- **File upload is content-verified**: uploaded files are inspected by **magic bytes**, not by declared content type or extension — a `.txt` renamed to `.pdf` is rejected with `400`.
+- **Storage-first writes with compensation**: binaries go to MinIO *outside* the DB transaction; if the transactional book write fails afterwards, the stored object is cleaned up (compensating action).
+- **Self-invocation-safe transactions**: the transactional part of a book write lives in a dedicated `@Transactional` bean (`EscritaTransacionalDeLivro`), avoiding the Spring proxy self-call pitfall.
+- **Performance hygiene**: `open-in-view: false`, `JOIN FETCH` + `@BatchSize` to avoid N+1 on paginated listings, Java 21 **virtual threads** enabled, separate endpoints for cover (cacheable 24 h) vs. file (streamed on demand).
+- **Error contract**: 11 typed business exceptions mapped by a single `@RestControllerAdvice`, so clients get structured, predictable payloads.
 
 ---
 
-## 🚀 Como Rodar o Projeto
+## 🛠️ Tech Stack
 
-### Pré-requisitos
+| Category | Technology | Version |
+|----------|-----------|---------|
+| Framework | Spring Boot | 4.1.2 |
+| Language | Java (virtual threads) | 21 (LTS) |
+| Frontend | Angular (standalone components) | 18.2 |
+| Database | PostgreSQL | 15 |
+| Object Storage | MinIO (S3-compatible) | client 8.5.7 |
+| Security | Spring Security + JWT RSA 2048 + OAuth2 (Google) | 4.x |
+| Persistence | Spring Data JPA / Hibernate | 4.1.2 |
+| Validation | Jakarta Bean Validation + custom validators (CPF) | — |
+| Dev Database | H2 (in-memory, `test` profile) | — |
+| Build | Maven wrapper + npm | — |
 
-- Java 21 (LTS)
-- Maven 3.9+
-- Docker e Docker Compose
+---
 
-### 1. Clone o repositório
+## 📡 API Endpoints
+
+### Authentication (`/api/auth`)
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| `POST` | `/api/auth/login` | Login with email **or** username, returns JWT (1 h) | ❌ |
+| `POST` | `/api/auth/register` | Create account (username + email + password) | ❌ |
+
+### Books (`/api/livros`)
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| `GET` | `/api/livros` | Paged public catalog | ❌ |
+| `GET` | `/api/livros/{id}` | Book details (404 for inactive books) | ❌ |
+| `GET` | `/api/livros/publicador/{id}` | Books by publisher (paged) | ❌ |
+| `GET` | `/api/livros/{id}/download` | Stream the file (PDF/EPUB) | ❌ |
+| `GET` | `/api/livros/{id}/link` | Pre-signed URL (7 days) | ❌ |
+| `GET` | `/api/livros/{id}/capa` | Cover image (cacheable) | ❌ |
+| `POST` | `/api/livros` | Publish a book (multipart: file + optional cover) | ✅ |
+| `PUT` | `/api/livros/{id}/arquivo` | Replace the file | ✅ |
+| `PUT` | `/api/livros/{id}/capa` | Replace the cover | ✅ |
+| `DELETE` | `/api/livros/{id}/capa` | Remove the cover | ✅ |
+| `DELETE` | `/api/livros/{id}` | Delete a book (owner/admin) | ✅ |
+
+### Users & identity (`/usuario`)
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| `POST` | `/usuario/create` | Register (legacy entry point) | ❌ |
+| `POST` | `/usuario/identidade` | Confirm civil identity (name + CPF, append-only) | ✅ |
+| `GET` | `/usuario/tudo` | List all users with their books | 🔑 ADMIN |
+| `PUT` | `/usuario/put/{id}` | Update a user | 🔑 ADMIN |
+| `PUT` | `/usuario/reativar/{id}` | Reactivate a deactivated account | 🔑 ADMIN |
+| `DELETE` | `/usuario/delete/{id}` | Deactivate an account (hides its catalog) | 🔑 ADMIN |
+
+### Diagnostics (`/api/diagnostico`, ADMIN only)
+
+`GET /threads` and `GET /simular-io` — thread-pool and I/O inspection under virtual threads.
+
+---
+
+## 🔒 Security
+
+- **JWT signed with RSA 2048** (asymmetric): tokens are verifiable without sharing the private key; dev builds generate keys at runtime, prod injects them via environment.
+- **OAuth2 login with Google** alongside credential login.
+- **Role-based access**: `ROLE_ADMIN`, `ROLE_USER`, `ROLE_AUTOR`; method-level `@PreAuthorize` plus URL rules; CORS configured for the SPA origins.
+- **BCrypt** password hashing; **AES-256-GCM** field encryption; **HMAC** blind indexes — no plaintext PII, no default keys, fail-fast startup.
+
+---
+
+## ✅ Validation rules
+
+- Brazilian **CPF** via the official check-digit algorithm (rejects `111.111.111-11`-style sequences)
+- **ISBN** format validation (duplicate ISBNs are *allowed* by design)
+- Publication date not in the future; page count > 0
+- File size limits: 50 MB book file, 5 MB cover
+- Content-type verified from **file signature bytes**, never from the client's MIME header
+
+---
+
+## 🧪 Testing
+
+**95 tests across 17 backend classes** — unit + Spring integration tests against real H2 and PostgreSQL containers:
+
+```bash
+./mvnw test
+```
+
+| Area | Coverage |
+|------|----------|
+| Identity & encryption | encrypted-at-rest names, searchable encrypted email (HMAC index), immutable publication trail |
+| Collection visibility | deactivated account hides/reactivates its whole catalog |
+| Books | file inspection (magic bytes), upload rules, ISBN duplicates allowed, pagination, deletion |
+| Users | registration, updates, deactivation/reactivation, identity confirmation flow |
+| Controllers | auth (email-or-username login), REST contracts, admin guards, diagnostics |
+| Infra | PostgreSQL prod-simulation profile, Docker stack status |
+
+The Angular app has its own Karma/Jasmine suite (services, guards, components) run with `npx ng test`.
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Java 21, Maven (wrapper included), Docker, Node.js 20+
+
+### 1. Clone
 
 ```bash
 git clone https://github.com/pedroMartinsMJ/BibliotecaPedroMJ.git
 cd BibliotecaPedroMJ
 ```
 
-### 2. Suba a infraestrutura (PostgreSQL + MinIO)
+### 2. Pick an environment
+
+| Profile | Database | Storage | Use case |
+|---------|----------|---------|----------|
+| `test` (default) | In-memory H2 | In-memory fake | Zero-setup instant run |
+| `prodsim` | Local PostgreSQL (Docker) | MinIO (Docker) | Full local simulation with seed data |
+| `prod` | PostgreSQL | MinIO | Real deployment — **all env vars mandatory** |
+
+Fastest demo (no infrastructure needed):
 
 ```bash
-cd src/main/resources
-docker compose up -d
+./mvnw spring-boot:run   # test profile: H2 + seeded data
 ```
 
-### 3. Configure as variáveis de ambiente (opcional)
+Full simulation:
 
 ```bash
-# Windows (PowerShell)
-$env:DB_USERNAME="pedro"
-$env:DB_PASSWORD="senha123"
-$env:MINIO_ACCESS_KEY="minioadmin"
-$env:MINIO_SECRET_KEY="minioadmin123"
-
-# Linux/macOS
-export DB_USERNAME=pedro
-export DB_PASSWORD=senha123
-export MINIO_ACCESS_KEY=minioadmin
-export MINIO_SECRET_KEY=minioadmin123
+cd src/main/resources && docker compose up -d   # PostgreSQL + MinIO (+ pgAdmin/Adminer)
+SPRING_PROFILES_ACTIVE=prodsim ./mvnw spring-boot:run
+cd frontend && npm install && npm start          # Angular on :4200, proxied to :8080
 ```
 
-### 4. Execute a aplicação
+`npm run build` outputs the SPA into `src/main/resources/static`, so Spring Boot can serve backend and frontend as one artifact.
 
-```bash
-./mvnw spring-boot:run
+Interactive launcher scripts are included for every OS family: `run-all.sh` / `start-menu.sh` (Linux/macOS) and `run-all.bat` / `start-menu.bat` (Windows). Environment variables are documented in [`.env.example`](.env.example).
+
+---
+
+## 📂 Project Structure
+
+```
+src/main/java/com/pedroMartinsMJ/bibliotecaPedroMJ/
+├── entities/            Usuario, Identidade (append-only), Livro, BibliotecaPessoal, Role
+├── repositories/        Spring Data JPA
+├── services/            LivroService, UsuarioService, MinioService,
+│                        InspecionadorDeArquivo, EscritaTransacionalDeLivro
+├── controllers/         Auth, Livro, Usuario, Diagnostics, SPA forwarding
+│   ├── DTOs/            *_CREATE / *_RESPONSE records
+│   └── mappersManuais/  explicit entity ⇄ DTO mappers
+├── security/            EncryptingConverter (AES-GCM), HashDeEmail (HMAC)
+├── segurityConfig/      SecurityConfig, JWT service, OAuth2 wiring
+├── validators/          CPF check-digit validator + annotations
+├── tratamentoDeErros/   GlobalExceptionHandler + typed business exceptions
+└── config/              MinIO config, profile-based seeders
+
+frontend/                Angular 18 standalone SPA
+src/main/resources/      application-{test,prodsim,prod}.yaml, docker-compose.yml
 ```
 
-A aplicação estará disponível em: `http://localhost:8080`
+---
 
-### 5. Acesse o MinIO Console
+## 📝 Further Reading
 
-- URL: `http://localhost:9001`
+- [`SPRING_BOOT_4X_MIGRATION.md`](SPRING_BOOT_4X_MIGRATION.md) — migrating this codebase to Spring Boot 4.x
+- [`SPRING_SECURITY_4X_MIGRATION.md`](SPRING_SECURITY_4X_MIGRATION.md) — Spring Security 4.x API changes and pitfalls (e.g. `hasRole` prefix behavior)
+
+---
+
+## 👨‍💻 Author
+
+**Pedro Martins**
+
+- GitHub: [@pedroMartinsMJ](https://github.com/pedroMartinsMJ)
+- Repository: [BibliotecaPedroMJ](https://github.com/pedroMartinsMJ/BibliotecaPedroMJ)
