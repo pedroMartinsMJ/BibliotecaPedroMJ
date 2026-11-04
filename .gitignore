@@ -56,3 +56,7 @@ frontend/coverage/
 
 # Notas locais de sessao (contexto do agente, nao vai para o github)
 *.local.md
+
+# Acervo local de livros para testar o upload. Os textos são de domínio público,
+# mas capas e edições diagramadas ainda podem ter direitos, então nada daqui sobe.
+livros com dominio publico/
