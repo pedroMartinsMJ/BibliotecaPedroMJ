@@ -208,7 +208,18 @@ cd frontend && npm install && npm start          # Angular on :4200, proxied to 
 
 `npm run build` outputs the SPA into `src/main/resources/static`, so Spring Boot can serve backend and frontend as one artifact.
 
-Interactive launcher scripts are included for every OS family: `run-all.sh` / `start-menu.sh` (Linux/macOS) and `run-all.bat` / `start-menu.bat` (Windows). Environment variables are documented in [`.env.example`](.env.example).
+Two interactive launchers cover every environment, one per OS family: `start-menu.sh` (Linux/macOS/Git Bash) and `start-menu.bat` (Windows). Both check the toolchain (Java 21+, Node 20+, npm, Maven, Docker and the compose images) before doing anything, then offer:
+
+| Option | What it does |
+|--------|--------------|
+| 1 | Test mode: Angular dev build, jar on `:8080`, H2, **security fully open** for page and CSS work |
+| 2 | Production simulation: Angular prod build, jar on `:8080`, PostgreSQL + MinIO from Docker, security on, seeded demo data |
+| 3 | Production: reserved — no production database exists yet |
+| 4 | Unit tests for backend (`mvnw test`) and frontend (`ng test`) |
+| 5 | Compile Angular and Spring Boot only, run nothing |
+| 6 | Exit |
+
+Option 1 reads [`.env.example`](.env.example) and option 2 reads [`.env.prodsim.example`](.env.prodsim.example), so neither needs a real `.env`. Option 2 makes one exception: when a local [`.env`](.env.example) exists it imports **only** the `GOOGLE_*` keys from it, because a Google OAuth client cannot be simulated — every other variable stays a simulation placeholder. Environment variables are documented in [`.env.example`](.env.example).
 
 ---
 

@@ -49,6 +49,11 @@ jwt:
 
 # Chave de criptografia para testes (AES-256)
 app:
+  # true mantem o @PreAuthorize valendo, como a suíte unitária espera. O launcher
+  # do modo teste injeta APP_TESTE_METODO_SEGURANCA=false para o dev abrir as
+  # páginas de ADMIN sem login.
+  teste:
+    metodo-seguranca: true
   encryption:
     key: "+s5G3B9/iucZjUV4HVie1BQgj8M6/2bquV82hLszU78="
 

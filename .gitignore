@@ -10,8 +10,13 @@ src/main/resources/app.key
 
 # Variáveis de ambiente (NUNCA commitar .env com segredos reais)
 .env
+.env.prodsim
+.env.prod
 .env.*
+# Permite commitar apenas os arquivos de exemplo (não contêm segredos reais)
 !.env.example
+!.env.prodsim.example
+!.env.prod.example
 
 ### STS ###
 .apt_generated

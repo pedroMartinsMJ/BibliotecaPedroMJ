@@ -12,7 +12,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -40,11 +39,14 @@ import java.util.List;
  * - H2 Console liberado
  * - CSRF desabilitado
  * - Headers de frame desabilitados (necessário para H2 Console)
- * - Todas as rotas abertas (opcional, dependendo do teste)
+ * - Todas as rotas abertas
+ *
+ * A checagem de @PreAuthorize vive em MethodSecurityNoTeste: o launcher do modo
+ * teste a desliga para o dev navegar sem login, e a suíte unitária a deixa ligada
+ * para continuar cobrindo o 403 das rotas de ADMIN.
  */
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
 @Profile("test") // Ativa APENAS quando o profile 'test' estiver ativo
 public class SecurityConfigTest {
 

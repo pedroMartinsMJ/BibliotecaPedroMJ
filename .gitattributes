@@ -1,2 +1,5 @@
 /mvnw text eol=lf
 *.cmd text eol=crlf
+# O launcher bash morre no Linux com CRLF no shebang; o .bat precisa de CRLF no cmd.exe.
+*.sh text eol=lf
+*.bat text eol=crlf
